@@ -23,22 +23,21 @@ void setup() {
   Neopixel.begin();
   Neopixel.setBrightness(brightness);
   Neopixel.show(); // Initialize all pixels to 'off'
-  
-  pinMode(10, OUTPUT);
+ 
   
   Skywriter.begin(12, 13);
   Skywriter.onTouch(touch);
   //Skywriter.onAirwheel(airwheel);
   Skywriter.onGesture(gesture);
-  //Skywriter.onXYZ(xyz);
+  Skywriter.onXYZ(xyz);
 }
 
 void loop() {
   Skywriter.poll();
-  int x;
+  /*int x;
   for(x = 0; x < 64; x++){
    Neopixel.setPixelColor(x, Wheel(color)); 
-  }
+  }*/
   Neopixel.show();
 }
 
@@ -53,8 +52,7 @@ void xyz(unsigned int x, unsigned int y, unsigned int z){
   unsigned char pixel_x = map(x, min_x, max_x, 0, 7);
   unsigned char pixel_y = map(y, min_y, max_y, 0, 7);
   uint32_t color        = Wheel(map(z, min_z, max_z, 0, 255));
-  
-  analogWrite(10, map(z, min_z, max_z, 0, 255));
+ 
   
   Neopixel.setPixelColor(pixel_x*8 + pixel_y, color);
   
@@ -80,14 +78,14 @@ void touch(unsigned char type){
   
   if( type == SW_TOUCH_CENTER ){
     Neopixel.setBrightness(map(Skywriter.x, min_x, max_x, 0, 255));
-    color = map(Skywriter.y, min_y, max_y, 0, 255);
+    //color = map(Skywriter.y, min_y, max_y, 0, 255);
   }
-  else if( type == SW_TOUCH_EAST ){
+  /*else if( type == SW_TOUCH_EAST ){
      Neopixel.setBrightness(0);
   }
   else if( type == SW_TOUCH_WEST ){
      Neopixel.setBrightness(255);
-  }
+  }*/
 }
 
 void airwheel(int delta){
