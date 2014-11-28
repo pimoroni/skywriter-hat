@@ -1,4 +1,5 @@
 #include "skywriter.h"
+#include <Arduino.h>
 
 void _SkyWriter::begin(unsigned char pin_xfer, unsigned char pin_reset){
   this->xfer = pin_xfer;
@@ -7,7 +8,7 @@ void _SkyWriter::begin(unsigned char pin_xfer, unsigned char pin_reset){
   
   Wire.begin();
   
-  pinMode(this->xfer, INPUT);
+  pinMode(this->xfer, INPUT_PULLUP);
   pinMode(this->rst,  OUTPUT);
   digitalWrite(this->rst, LOW);
   pinMode(this->rst, INPUT);
