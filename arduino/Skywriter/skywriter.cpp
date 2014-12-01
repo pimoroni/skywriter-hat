@@ -45,15 +45,13 @@ void _SkyWriter::poll(){
   
     switch(d_ident){
       case 0x91:
-        //Serial.println("Got sensor data");
         this->handle_sensor_data(this->command_buffer);
         break;
       case 0x15:
-        //Serial.println("Got status info");
+        // Status info - Unimplemented
         break;
       case 0x83:
-        //Serial.println("Got fw data");
-        Serial.println((const char*)this->command_buffer);
+        // Firmware data - Unimplemented
         break;
     }
     
@@ -106,7 +104,6 @@ void _SkyWriter::handle_sensor_data(unsigned char* data){
 */  
       
       if( data[SW_PAYLOAD_HDR_CONFIGMASK] & SW_DATA_XYZ && data[SW_PAYLOAD_HDR_SYSINFO] & SW_SYS_POSITION ){
-        //Serial.println("Handling xzy...");
         // Valid XYZ position
         this->x = data[SW_PAYLOAD_X+1] << 8 | data[SW_PAYLOAD_X];
         this->y = data[SW_PAYLOAD_Y+1] << 8 | data[SW_PAYLOAD_Y];
@@ -116,14 +113,12 @@ void _SkyWriter::handle_sensor_data(unsigned char* data){
       }
       
       if( data[SW_PAYLOAD_HDR_CONFIGMASK] & SW_DATA_GESTURE && data[SW_PAYLOAD_GESTURE] > 0){
-        //Serial.println("Handling gesture...");
         // Valid gesture
         this->last_gesture = data[SW_PAYLOAD_GESTURE];
         if( this->handle_gesture != NULL ) this->handle_gesture(this->last_gesture);
       }
       
       if ( data[SW_PAYLOAD_HDR_CONFIGMASK] & SW_DATA_TOUCH ){
-        //Serial.println("Handling touch...");
         // Valid touch
         uint16_t touch_action = data[SW_PAYLOAD_TOUCH+1] << 8 | data[SW_PAYLOAD_TOUCH];
         uint16_t comp = 1 << 14;
@@ -139,7 +134,6 @@ void _SkyWriter::handle_sensor_data(unsigned char* data){
       }
       
       if( data[SW_PAYLOAD_HDR_CONFIGMASK] & SW_DATA_AIRWHEEL && data[SW_PAYLOAD_HDR_SYSINFO] & SW_SYS_AIRWHEEL ){
-        //Serial.println("Handling airwheel...");
         
         double delta = (data[SW_PAYLOAD_AIRWHEEL] - lastrotation) / 32.0;
         
