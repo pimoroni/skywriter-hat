@@ -44,9 +44,9 @@ setup(name		= 'skywriter',
 	description	= 'Skywriter HAT Driver',
 	long_description= open('README.md').read() + open('CHANGELOG.txt').read(),
 	license		= 'MIT',
-	keywords	= 'Raspberry Pi Gesture HAT',
+	keywords	= 'Raspberry Pi Skywriter Gesture HAT',
 	url		= 'http://www.pimoroni.com',
 	classifiers     = classifiers,
-	packages	= ['skywriter'],
+	py_modules	= ['skywriter'],
 	install_requires= ['smbus']
 )
