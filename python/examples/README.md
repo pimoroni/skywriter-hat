@@ -8,7 +8,7 @@ This example does exactly what you'd expect- gives you control over the mouse wi
 
 To install, you'll need to:
 
-    sudo apt-get install python-dev python-xlib libxtst-dev python-pip
+    sudo apt-get install python-dev python-xlib libxtst-dev libpng-dev python-pip
 
 And:
 
