@@ -105,20 +105,17 @@ SW_ADDR      = 0x42
 SW_RESET_PIN = 17
 SW_XFER_PIN  = 27
 
-FW_UPDATE_START     = 0x80
-FW_UPDATE_BLOCK     = 0x81
-FW_UPDATE_COMPLETED = 0x82
+FW_UPDATE_START      = 0x80
+FW_UPDATE_BLOCK      = 0x81
+FW_UPDATE_COMPLETED  = 0x82
 
-FW_UPDATE_FN_PROG   = 0
-FW_UPDATE_FN_VERIFY = 1
+FW_UPDATE_FN_PROG    = 0
+FW_UPDATE_FN_VERIFY  = 1
+FW_UPDATE_FN_RESTART = 3
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(SW_RESET_PIN, GPIO.OUT, initial=GPIO.HIGH)
 GPIO.setup(SW_XFER_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.output(SW_RESET_PIN, GPIO.LOW)
-time.sleep(.01)
-GPIO.output(SW_RESET_PIN, GPIO.HIGH)
-#time.sleep(.3)
 
 class Skyware():
   session_id = 0
@@ -159,17 +156,27 @@ class Skyware():
     else:
       payload.append(FW_UPDATE_FN_PROG) # Set function to program
 
-    payload.append(0)
+    payload.append(0) # Reserved
 
     crc = self.calculate_crc(payload[8:])
     payload.replace(4,crc,4)
  
     self.i2c_write(payload)
-    time.sleep(0.04)
-    result = self.handle_exception()
+    time.sleep(0.01)
+    
+    # Wait for start confirmation
+    ts = int(round(time.time() * 1000))
+    while int(round(time.time() * 1000)) < (ts + 10000):
+      result = self.handle_exception()
+      if result[4] == FW_UPDATE_START and result[6] == 0:
+        return True  # Start success
+      elif result[4] == FW_UPDATE_START:
+        return False # Start failed
+    return False
+
     print("Started",result[0:10])
 
-  def update_complete(self,firmware_version):
+  def update_complete(self,firmware_version, restart=False):
     payload = Payload()
     payload.append(0x88) # Length
     payload.append(0x00)
@@ -180,7 +187,10 @@ class Skyware():
 
     payload.append(self.session_id, 4) # Session ID
     
-    payload.append(FW_UPDATE_FN_PROG)
+    if restart:
+      payload.append(FW_UPDATE_FN_RESTART)
+    else:
+      payload.append(FW_UPDATE_FN_PROG)
 
     payload.append(firmware_version)
     #payload.append(1,120)
@@ -191,9 +201,25 @@ class Skyware():
     payload.replace(4,crc,4)
  
     self.i2c_write(payload)
-    time.sleep(0.06)
-    result = self.handle_exception()
-    print( "Completed:", result[0:10] )
+    time.sleep(0.01)
+
+ 
+    if restart:
+      return True
+    else:
+      # Wait for finish confirmation
+      ts = int(round(time.time() * 1000))
+      while int(round(time.time() * 1000)) < (ts + 10000):
+        result = self.handle_exception()
+        if result[4] == FW_UPDATE_COMPLETED and result[6] == 0:
+          return True  # Finish success
+        elif result[4] == FW_UPDATE_COMPLETED:
+          print("Finish failed",result)
+          return False # Finish failed
+      return False
+
+
+
   
   def verify_block(self, block_addr, block_len, block_data):
     payload = Payload()
@@ -213,13 +239,21 @@ class Skyware():
     payload.replace(4,crc,4)
 
     self.i2c_write(payload)
-   
-    time.sleep(0.06)
-    result = self.handle_exception()
-    if( result[6] == 0x08 ):
-      print("Verify Failed!",result[0:10])
-    elif( result[6] == 0 ):
-      print("Verify OK!",    result[0:10])
+  
+    time.sleep(0.02)
+ 
+    # Wait for finish confirmation
+    ts = int(round(time.time() * 1000))
+    while int(round(time.time() * 1000)) < (ts + 10000):
+      result = self.handle_exception()
+      if result[4] == FW_UPDATE_BLOCK and result[6] == 0:
+        print("BLOCK VERIFIED")
+        return True
+      elif result[4] == FW_UPDATE_BLOCK:
+        print("BLOCK VERIFY FAILED",result[0:10])
+        return False
+    print("BLOCK VERIFY TIMEOUT")
+    return False
       
 
   def update_block(self, block_addr, block_len, block_data):
@@ -240,11 +274,34 @@ class Skyware():
     payload.replace(4,crc,4)
 
     self.i2c_write(payload)
+    time.sleep(0.02) # Totally fails if no delay here, output buffer issue?
+    
+    # Wait for finish confirmation
+    ts = int(round(time.time() * 1000))
+    while int(round(time.time() * 1000)) < (ts + 10000):
+      result = self.handle_exception()
+      if result[4] == FW_UPDATE_BLOCK and result[6] == 0:
+        print("BLOCK OK")
+        return True
+      elif result[4] == FW_UPDATE_BLOCK:
+        print("BLOCK FAILED",result[0:10])
+        return False
+    print("BLOCK TIMEOUT")
+    return False
 
-    time.sleep(0.06)
-    result = self.handle_exception()
-    if( result[6] == 0 ):
-      print("OK", result[0:10])
+  def handle_fw_info(self, timeout = 30000):
+    ts = int(round(time.time() * 1000))
+    while int(round(time.time() * 1000)) < (ts+timeout):
+      fwversion = updater.handle_exception()
+      if fwversion[3] == 0x83:
+        print(fwversion[12:])
+        return True
+    return False
+ 
+  def reset(self):
+    GPIO.output(SW_RESET_PIN, GPIO.LOW)
+    time.sleep(0.01)
+    GPIO.output(SW_RESET_PIN, GPIO.HIGH)
 
   def handle_exception(self):
     '''
@@ -261,9 +318,12 @@ class Skyware():
       pass
     if not GPIO.input(SW_XFER_PIN):
       GPIO.setup(SW_XFER_PIN, GPIO.OUT, initial=GPIO.LOW)
-      data = self.i2c.transaction(i2c.reading(SW_ADDR, 132))
-      #print('RESPONSE:', data[0])
-      return data[0]
+      try:
+        data = self.i2c.transaction(i2c.reading(SW_ADDR, 132))
+        #print('RESPONSE:', data[0])
+        return data[0]
+      except IOError:
+        return [0,0,0,0,0,0,0,0,0,0]
       GPIO.setup(SW_XFER_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 class Payload(list):
@@ -303,38 +363,67 @@ class Payload(list):
         list.append(self,item)
 
 updater = Skyware()
-updater.handle_exception()
+updater.reset()
 
+#print(updater.handle_exception())
+#while True:
+#  time.sleep(1)
+#  print(updater.handle_exception())
 #exit()
-print("Starting update...")
-updater.update_begin(fw.LDR_IV)
 
-for page in fw.LDR_UPDATE_DATA:
-  address = page[0]
-  length  = page[1]
-  print("Updating addr: ", address)
-  updater.update_block(address, length, page[2:])
-  #time.sleep(0.06)
-  #updater.handle_exception()
-  #print("Verifying addr: ", address)
-  #updater.verify_block(address, length, page)
+wait_for_fw_msg = False
 
-print("Finishing update...")
-updater.update_complete(fw.LDR_VERSION)
+if wait_for_fw_msg:
+  proceed = False
+  while proceed == False:
+    print("Waiting for library loader version info...")
+    ts = int(round(time.time() * 1000))
+    print("Start time", ts)
+    while int(round(time.time() * 1000)) < (ts+30000) and proceed == False:
+      fwversion = updater.handle_exception()
+      if fwversion[3] == 0x83:
+        print("Got firmware message:", fwversion)
+        proceed = True
 
-time.sleep(0.5)
-print("Resetting...")
-GPIO.output(SW_RESET_PIN, GPIO.LOW)
-time.sleep(.01)
-GPIO.output(SW_RESET_PIN, GPIO.HIGH)
-time.sleep(.3)
-updater.handle_exception()
+update_loader = False
 
-for x in range(21):
-  time.sleep(1)
-  print("...")
+if update_loader:
 
-print("Starting update...")
+  print("Starting loader update...")
+  updater.update_begin(fw.LDR_IV)
+  print(updater.handle_exception())
+
+  for page in fw.LDR_UPDATE_DATA:
+    address = page[0]
+    length  = page[1]
+    print("Updating addr: ", address)
+    updater.update_block(address, length, page[2:])
+
+  print("Finishing update...")
+  updater.update_complete(fw.LDR_VERSION)
+  time.sleep(0.5)
+  updater.update_complete(fw.LDR_VERSION, True)
+  proceed = False
+
+  while proceed == False:
+    print("Waiting for library loader version info...")
+    ts = int(round(time.time() * 1000))
+    print("Start time", ts)
+    while int(round(time.time() * 1000)) < (ts+30000) and proceed == False:
+      fwversion = updater.handle_exception()
+      if fwversion[3] == 0x83:
+        proceed = True
+
+    print("Issuing reset...")
+    updater.update_complete(fw.LDR_VERSION, True)
+
+
+if update_loader:
+  time.sleep(0.5)
+
+updater.handle_fw_info()
+
+print("Starting library update...")
 updater.update_begin(fw.FW_IV)
 
 for page in fw.FW_UPDATE_DATA:
@@ -342,30 +431,30 @@ for page in fw.FW_UPDATE_DATA:
   length  = page[1]
   print("Updating addr: ", address)
   updater.update_block(address, length, page[2:])
-  #time.sleep(0.06)
-  #updater.handle_exception()
-  #print("Verifying addr: ", address)
-  #updater.verify_block(address, length, page)
 
 print("Finishing update...")
 updater.update_complete(fw.FW_VERSION)
 
+proceed = False
+
+while proceed == False:
+  print("Issuing reset...")
+  updater.update_complete(fw.FW_VERSION, True)
+
+  print("Waiting for library loader version info...")
+  proceed = updater.handle_fw_info(30000) 
 
 print("Verifying update...")
-updater.update_begin(fw.FW_IV,True)
-time.sleep(0.06)
-updater.handle_exception()
+if updater.update_begin(fw.FW_IV,True):
 
-for page in fw.FW_UPDATE_DATA:
-  address = page[0]
-  length  = page[1]
-  print("Verifying addr: ", address)
-  updater.verify_block(address, length, page[2:])
+  for page in fw.FW_UPDATE_DATA:
+    address = page[0]
+    length  = page[1]
+    print("Verifying addr: ", address)
+    updater.verify_block(address, length, page[2:])
+else:
+  print("Failed starting verify...")
 
 print("Resetting...")
-GPIO.output(SW_RESET_PIN, GPIO.LOW)
-time.sleep(.01)
-GPIO.output(SW_RESET_PIN, GPIO.HIGH)
-time.sleep(.3)
-updater.handle_exception()
-
+updater.reset()
+updater.handle_fw_info()
