@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+exit("This tool is not yet functional. Do not run this under any circumstances ever!")
 #
 # Skywriter HAT GestIC Firmware Updater
 #
