@@ -1,8 +1,0 @@
-MANIFEST.in
-setup.py
-skywriter.py
-skywriter.egg-info/PKG-INFO
-skywriter.egg-info/SOURCES.txt
-skywriter.egg-info/dependency_links.txt
-skywriter.egg-info/requires.txt
-skywriter.egg-info/top_level.txt
