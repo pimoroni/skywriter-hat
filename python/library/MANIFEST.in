@@ -1,5 +1,5 @@
-skywriter.py
-setup.py
-README.md
-CHANGELOG.txt
-LICENSE.txt
+include skywriter.py
+include setup.py
+include README.md
+include CHANGELOG.txt
+include LICENSE.txt

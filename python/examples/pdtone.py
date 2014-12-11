@@ -3,6 +3,7 @@ import os, socket, time, subprocess, atexit, tempfile
 class PDTone():
   def __init__(self, pd_file=None):
     self.port = 3000
+    self.addr = '127.0.0.1' #'192.168.1.86'
     self.tempfile = None
     if pd_file == None:
       self.tempfile, self.pd_file = tempfile.mkstemp()
@@ -25,18 +26,18 @@ class PDTone():
     pid = subprocess.check_output(['/bin/pidof','pd'], )
     time.sleep(0.5)
     self.pid = int(pid.split(' ')[0])
-    print("Started PD with PID: " + str(pid))
+    print("Started PD with PID: " + str(pid) + " File: " + pdfile)
   
   def connect(self):
-    attempts = 10
+    attempts = 30
     while attempts:
       print("Attempting to connect to PD")
       try:
-        self.socket.connect(('127.0.0.1',self.port))
+        self.socket.connect((self.addr,self.port))
         print("Connected to PD")
         break
       except socket.error:
-        time.sleep(0.5)
+        time.sleep(1)
       attempts-=1
 
   def stop_pd(self):
@@ -58,6 +59,9 @@ class PDTone():
 
   def power_off(self):
     self.send('power 0')
+ 
+  def custom(self, k, f):
+    self.send(k + ' ' + str(f))
   
   def tone(self, f):
     self.send('tone ' + str(f))
@@ -71,25 +75,76 @@ class PDTone():
   def create_pd_file(self):
     print("Populating temp PD file: " + self.pd_file)
     f = open(self.pd_file, 'w')
-    f.write("#N canvas -1 43 1024 694 10;")
-    f.write("#X obj 234 309 dac~;")
-    f.write("#X obj 251 204 osc~ 440;")
-    f.write("#X obj 572 145 netreceive " + str(self.port) + ";")
-    f.write("#X obj 585 349 s tone;")
-    f.write("#X obj 218 90 r tone;")
-    f.write("#X obj 695 315 s volume;")
-    f.write("#X obj 665 506 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0")
+    f.write("#N canvas 42 59 994 720 10;")
+    f.write("#X obj 244 545 dac~;")
+    f.write("#X obj 547 131 netreceive " + str(self.port) + ";")
+    f.write("#X obj 548 168 route x y z volume power;")
+    f.write("#X obj 542 209 s x;")
+    f.write("#X obj 583 216 s y;")
+    f.write("#X obj 624 218 s z;")
+    f.write("#X obj 680 249 s volume;")
+    f.write("#X obj 778 245 s power;")
+    f.write("#X obj 371 158 r z;")
+    f.write("#X obj 371 264 phasor~;")
+    f.write("#X obj 247 447 +~;")
+    f.write("#X obj 211 144 +~ 400;")
+    f.write("#X obj 113 143 +~ 400;")
+    f.write("#X obj 117 249 phasor~;")
+    f.write("#X obj 212 256 phasor~;")
+    f.write("#X obj 210 183 -~ 4;")
+    f.write("#X obj 294 70 r y;")
+    f.write("#X obj 291 110 * 0.008;")
+    f.write("#X obj 109 106 *~ 0.6;")
+    f.write("#X obj 211 109 *~ 0.6;")
+    f.write("#X obj 210 79 r z;")
+    f.write("#X obj 109 76 r z;")
+    f.write("#X obj 371 227 +~ 400;")
+    f.write("#X obj 371 194 *~ 0.6;")
+    f.write("#X obj 371 315 bp~ 660 0.1;")
+    f.write("#X obj 371 412 *~ 0.15;")
+    f.write("#X obj 294 391 r x;")
+    f.write("#X obj 249 514 bp~ 800 0.99;")
+    f.write("#X obj 251 481 *~ 0.5;")
+    f.write("#X obj 301 453 * 0.001;")
+    f.write("#X obj 559 364 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 0")
     f.write("300;")
-    f.write("#X obj 618 220 route tone volume power;")
-    f.write("#X obj 808 315 s power;")
-    f.write("#X obj 655 454 r power;")
-    f.write("#X msg 661 560 \; pd dsp \$1 \;;")
-    f.write("#X connect 1 0 0 0;")
-    f.write("#X connect 2 0 7 0;")
-    f.write("#X connect 4 0 1 0;")
-    f.write("#X connect 6 0 10 0;")
-    f.write("#X connect 7 0 3 0;")
-    f.write("#X connect 7 1 5 0;")
-    f.write("#X connect 7 2 8 0;")
-    f.write("#X connect 9 0 6 0;")
+    f.write("#X obj 549 312 r power;")
+    f.write("#X msg 555 418 \; pd dsp \$1 \;;")
+    f.write("#X obj 371 375 *~ 0.12;")
+    f.write("#X obj 212 322 *~ 0.5;")
+    f.write("#X obj 120 340 *~ 0.5;")
+    f.write("#X connect 1 0 2 0;")
+    f.write("#X connect 2 0 3 0;")
+    f.write("#X connect 2 1 4 0;")
+    f.write("#X connect 2 2 5 0;")
+    f.write("#X connect 2 3 6 0;")
+    f.write("#X connect 2 4 7 0;")
+    f.write("#X connect 8 0 23 0;")
+    f.write("#X connect 9 0 24 0;")
+    f.write("#X connect 10 0 28 0;")
+    f.write("#X connect 11 0 15 0;")
+    f.write("#X connect 12 0 13 0;")
+    f.write("#X connect 13 0 35 0;")
+    f.write("#X connect 14 0 34 0;")
+    f.write("#X connect 15 0 14 0;")
+    f.write("#X connect 16 0 17 0;")
+    f.write("#X connect 17 0 15 1;")
+    f.write("#X connect 18 0 12 0;")
+    f.write("#X connect 19 0 11 0;")
+    f.write("#X connect 20 0 19 0;")
+    f.write("#X connect 21 0 18 0;")
+    f.write("#X connect 22 0 9 0;")
+    f.write("#X connect 23 0 22 0;")
+    f.write("#X connect 24 0 33 0;")
+    f.write("#X connect 25 0 10 0;")
+    f.write("#X connect 26 0 29 0;")
+    f.write("#X connect 27 0 0 0;")
+    f.write("#X connect 27 0 0 1;")
+    f.write("#X connect 28 0 27 0;")
+    f.write("#X connect 29 0 28 1;")
+    f.write("#X connect 30 0 32 0;")
+    f.write("#X connect 31 0 30 0;")
+    f.write("#X connect 33 0 25 0;")
+    f.write("#X connect 34 0 10 0;")
+    f.write("#X connect 35 0 10 0;")
     f.close()
