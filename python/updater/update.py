@@ -140,9 +140,9 @@ class Skyware():
 
   def update_begin(self, iv, verify_only = False):
     payload = Payload()
-    payload.append(0x1c) # Length
-    payload.append(0x00) # Flags
-    payload.append(0x00) # Seq
+    payload.append(0x1c, 1) # Length
+    payload.append(0x00, 1) # Flags
+    payload.append(0x00, 1) # Seq
     payload.append(FW_UPDATE_START)
 
     payload.append(0, 4) # Reserve 4 bytes for CRC
@@ -171,6 +171,7 @@ class Skyware():
       if result[4] == FW_UPDATE_START and result[6] == 0:
         return True  # Start success
       elif result[4] == FW_UPDATE_START:
+        print(result[0:10])
         return False # Start failed
     return False
 
@@ -178,19 +179,19 @@ class Skyware():
 
   def update_complete(self,firmware_version, restart=False):
     payload = Payload()
-    payload.append(0x88) # Length
-    payload.append(0x00)
-    payload.append(0x00)
-    payload.append(FW_UPDATE_COMPLETED)
+    payload.append(0x88, 1) # Length
+    payload.append(0x00, 1)
+    payload.append(0x00, 1)
+    payload.append(FW_UPDATE_COMPLETED, 1)
 
     payload.append(0, 4) # Reserve 4 bytes for CRC
 
     payload.append(self.session_id, 4) # Session ID
     
     if restart:
-      payload.append(FW_UPDATE_FN_RESTART)
+      payload.append(FW_UPDATE_FN_RESTART, 1)
     else:
-      payload.append(FW_UPDATE_FN_PROG)
+      payload.append(FW_UPDATE_FN_PROG, 1)
 
     payload.append(firmware_version)
     #payload.append(1,120)
@@ -201,6 +202,7 @@ class Skyware():
     payload.replace(4,crc,4)
  
     self.i2c_write(payload)
+    payload = None
     time.sleep(0.04)
 
  
@@ -223,24 +225,24 @@ class Skyware():
   
   def verify_block(self, block_addr, block_len, block_data):
     payload = Payload()
-    payload.append(0x8c)
-    payload.append(0x00) 
-    payload.append(0x00)
-    payload.append(FW_UPDATE_BLOCK)
+    payload.append(0x8c, 1) # 140 bytes
+    payload.append(0x00, 1) 
+    payload.append(0x00, 1)
+    payload.append(FW_UPDATE_BLOCK, 1)
     
     payload.append(0, 4)
 
     payload.append(block_addr,2) # Address to program
-    payload.append(block_len, 1) # Length of block to program
-    payload.append(FW_UPDATE_FN_VERIFY) # Set to program
+    payload.append(128, 1) # Length of block to program
+    payload.append(FW_UPDATE_FN_VERIFY, 1) # Set to program
     payload.append(block_data) # Actual payload
 
     crc = self.calculate_crc(payload[8:])
     payload.replace(4,crc,4)
 
     self.i2c_write(payload)
-  
-    time.sleep(0.04)
+
+    time.sleep(0.05)
  
     # Wait for finish confirmation
     ts = int(round(time.time() * 1000))
@@ -257,17 +259,20 @@ class Skyware():
       
 
   def update_block(self, block_addr, block_len, block_data):
+
+    print(str(len(block_data)) + " == " + str(block_len))
+ 
     payload = Payload()
-    payload.append(0x8c)
-    payload.append(0x00) 
-    payload.append(0x00)
-    payload.append(FW_UPDATE_BLOCK)
+    payload.append(0x8c, 1)
+    payload.append(0x00, 1) 
+    payload.append(0x00, 1)
+    payload.append(FW_UPDATE_BLOCK, 1)
     
-    payload.append(0, 4)
+    payload.append(0, 5)
 
     payload.append(block_addr,2) # Address to program
-    payload.append(block_len, 1) # Length of block to program
-    payload.append(FW_UPDATE_FN_PROG) # Set to program
+    payload.append(128, 1) # Length of block to program
+    payload.append(FW_UPDATE_FN_PROG, 1) # Set to program
     payload.append(block_data) # Actual payload
 
     crc = self.calculate_crc(payload[8:])
@@ -365,6 +370,13 @@ class Payload(list):
       for item in value:
         list.append(self,item)
 
+
+'''
+##########################################################################
+MAIN UPDATE STUFF HAPPENS HERE
+##########################################################################
+'''
+
 updater = Skyware()
 updater.reset()
 
@@ -376,7 +388,9 @@ updater.reset()
 
 #updater.handle_exception()
 
-wait_for_fw_msg = True
+updater.handle_fw_info()
+
+wait_for_fw_msg = False
 
 if wait_for_fw_msg:
   proceed = False
@@ -417,7 +431,7 @@ if update_loader:
   updater.update_complete(fw.LDR_VERSION, True)
 
   print("Waiting 25sec for soft reset...")
-  time.sleep(25)
+  time.sleep(30)
 
   print("Issuing hard-reset...")
   updater.reset()
@@ -481,11 +495,10 @@ updater.update_complete(fw.FW_VERSION)
 print("Issuing reset...")
 updater.update_complete(fw.FW_VERSION, True)
 
-time.sleep(2)
+time.sleep(25)
 
 updater.reset()
 updater.handle_fw_info()
-time.sleep(0.2)
 
 #print("Waiting for library loader version info...")
 #proceed = updater.handle_fw_info(30000) 
@@ -505,4 +518,5 @@ print("Resetting...")
 updater.reset()
 updater.handle_fw_info()
 while True:
+  time.sleep(1)
   print(updater.handle_exception())
