@@ -15,5 +15,11 @@ From pip
 From source
 -----------
 
-    sudo apt-get install python3-pip
-    sudo pip-3.2 install skywriter
+Clone this library, make your way into this directory:
+
+    git clone https://github.com/pimoroni/skywriter-hat
+    cd skywriter-hat/python/library
+    
+And then install the library with:
+
+    sudo python setup.py install
