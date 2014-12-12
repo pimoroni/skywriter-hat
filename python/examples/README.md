@@ -24,3 +24,13 @@ Nothing exciting, simply outputs the variety of gestures, touches and movements 
 * Touch/Tap/Doubletap - touch, tap or double-tap one of the edges or the center of the HAT
 * X/Y/Z - just move your finger over the HAT
 * Gestures - try waving your hand from one side of the HAT to the other
+
+
+theramin.py
+-----------
+
+Show off your musical prowess and melodic genius with this groundbreaking 3d theremin. 
+
+To run, you'll need to install PD:
+
+    sudo apt-get install pd
