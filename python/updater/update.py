@@ -372,6 +372,7 @@ updater.reset()
 
 updater.handle_fw_info()
 
+verify = True
 update_loader = True
 
 if update_loader:
