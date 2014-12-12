@@ -397,8 +397,11 @@ if update_loader:
   time.sleep(0.5)
   updater.update_complete(fw.LDR_VERSION, True)
 
-  print("Waiting 25 sec for loader update to take effect...")
-  time.sleep(25)
+  print("Waiting for loader update to take effect...")
+  updater.handle_fw_info()
+
+  #print("Waiting 25 sec for loader update to take effect...")
+  #time.sleep(25)
 
   print("Hard reset...")
   updater.reset()
