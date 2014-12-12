@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-exit("This tool is not yet functional. Do not run this under any circumstances ever!")
 #
 # Skywriter HAT GestIC Firmware Updater
 #
@@ -95,6 +94,16 @@ exit("This tool is not yet functional. Do not run this under any circumstances e
 # ---------
 # 120 bytes interpreted as a string, containing Firmware Version
 
+
+print("Warning!")
+print("You should not run this updater unless you have been told to do so")
+print("This may be because we've released an update.")
+print("")
+print("Are you sure you want to continue? Type 'yes' to confirm:")
+
+if not input() == "yes":
+  exit()
+
 import random, binascii
 import fw
 import i2c
@@ -131,12 +140,10 @@ class Skyware():
     self.i2c = i2c.I2CMaster(self.i2c_bus_id())
 
   def i2c_write(self, data):
-    #print('Writing packet:',len(data),data)
     self.i2c.transaction(i2c.writing_bytes(SW_ADDR, *data))
 
   def calculate_crc(self,payload):
     crc = binascii.crc32(bytes(payload))
-    #print(crc, bytes(payload))
     return crc
 
   def update_begin(self, iv, verify_only = False):
@@ -266,13 +273,6 @@ class Skyware():
     
     payload.append(0, 4)
 
-    #block_data = block_data[0:block_len-1]
-
-    #block_data.reverse()
-    #for x in range(128-(block_len-1)):
-    #  block_data.append(0)
-    #block_data.reverse()
-
     payload.append(block_addr,2) # Address to program
     payload.append(block_len, 1) # Length of block to program
     payload.append(FW_UPDATE_FN_PROG) # Set to program
@@ -331,7 +331,6 @@ class Skyware():
       GPIO.setup(SW_XFER_PIN, GPIO.OUT, initial=GPIO.LOW)
       try:
         data = self.i2c.transaction(i2c.reading(SW_ADDR, 132))
-        #print('RESPONSE:', data[0])
         return data[0]
       except IOError:
         return [0,0,0,0,0,0,0,0,0,0]
@@ -344,8 +343,6 @@ class Payload(list):
   def replace(self, start, value, size=1):
     if type(value) == int: # or type(value) == long:
       self[start:start+size] = value.to_bytes(length=size,byteorder="little",signed=False)
-      #for x in range(size):
-      #  self[start+x] = int(value >> (((size-1)*8) - 8*x) & 0xFF)
     elif type(value) == str:
       x = 0
       for char in value:
@@ -361,11 +358,8 @@ class Payload(list):
     size  = size of supplied integer in bytes
     '''
     if type(value) == int: # or type(value) == long:
-      #print('Convert int',value,size)
       for x in value.to_bytes(length=size,byteorder="little",signed=False):
         list.append(self, x)
-      #for x in range(size):
-      #  list.append(self, int(value >> (((size-1)*8) - 8*x) & 0xFF ))      
     elif type(value) == str:
       for char in value:
         list.append(self, ord(char))    
@@ -376,39 +370,18 @@ class Payload(list):
 updater = Skyware()
 updater.reset()
 
-#print(updater.handle_exception())
-#while True:
-#  time.sleep(1)
-#  print(updater.handle_exception())
-#exit()
-
-#updater.handle_exception()
-
-wait_for_fw_msg = True
-
-if wait_for_fw_msg:
-  proceed = False
-  while proceed == False:
-    print("Waiting for library loader version info...")
-    ts = int(round(time.time() * 1000))
-    print("Start time", ts)
-    while int(round(time.time() * 1000)) < (ts+30000) and proceed == False:
-      fwversion = updater.handle_exception()
-      if fwversion[3] == 0x83:
-        #print("Got firmware message:", fwversion)
-        proceed = True
+updater.handle_fw_info()
 
 update_loader = True
 
 if update_loader:
 
-  #print("Starting loader update...")
+  print("Starting loader update...")
   if updater.update_begin(fw.LDR_IV):
     print("Loader update started...")
   else:
     print("Loader update failed...")
     exit()
-  #print(updater.handle_exception())
 
   idx = 0
   for page in fw.LDR_UPDATE_DATA:
@@ -416,7 +389,6 @@ if update_loader:
     length  = page[1]
     print(str(idx) + ": Updating addr: ", address)
     updater.update_block(address, length, page[2:])
-    #updater.verify_block(address, length, page[2:])
     idx+=1
 
   print("Finishing update...")
@@ -424,32 +396,14 @@ if update_loader:
   time.sleep(0.5)
   updater.update_complete(fw.LDR_VERSION, True)
 
-  print("Waiting 25sec for soft reset...")
+  print("Waiting 25 sec for loader update to take effect...")
   time.sleep(25)
 
-  print("Issuing hard-reset...")
+  print("Hard reset...")
   updater.reset()
-
   print("Waiting for firmware info...")
   updater.handle_fw_info()
 
-
-'''
-  proceed = True
-
-  while proceed == False:
-    print("Waiting for library loader version info...")
-    ts = int(round(time.time() * 1000))
-    print("Start time", ts)
-    while int(round(time.time() * 1000)) < (ts+30000) and proceed == False:
-      fwversion = updater.handle_exception()
-      if fwversion[3] == 0x83:
-        proceed = True
-
-if update_loader:
-  time.sleep(0.5)
-
-'''
 
 '''
 After power-on or hardware reset, the Library Loader
@@ -461,7 +415,6 @@ during which the library update should be initiated.
 Once update is started, Library Loader should stay in
 update mode until the next reset.
 '''
-#updater.handle_fw_info()
 
 if updater.update_begin(fw.FW_IV):
   print("Started Library update...")
@@ -475,42 +428,34 @@ for page in fw.FW_UPDATE_DATA:
   length  = page[1]
   print(str(idx) + ": Updating addr: ", address)
   updater.update_block(address, length, page[2:])
-  #print("Verifying...")
-  #updater.verify_block(address, length, page[2:])
-  #time.sleep(0.01)
   idx+=1
 
 print("Finishing update...")
 updater.update_complete(fw.FW_VERSION)
 
-#proceed = False
-
-#while proceed == False:
 print("Issuing reset...")
 updater.update_complete(fw.FW_VERSION, True)
 
-time.sleep(25)
-
+time.sleep(1)
 updater.reset()
+
 updater.handle_fw_info()
-#time.sleep(0.2)
 
-#print("Waiting for library loader version info...")
-#proceed = updater.handle_fw_info(30000) 
+if verify:
+  print("Verifying update...")
+  if updater.update_begin(fw.FW_IV,True):
 
-print("Verifying update...")
-if updater.update_begin(fw.FW_IV,True):
-
-  for page in fw.FW_UPDATE_DATA:
-    address = page[0]
-    length  = page[1]
-    print("Verifying addr: ", address)
-    updater.verify_block(address, length, page[2:])
-else:
-  print("Failed starting verify...")
+    for page in fw.FW_UPDATE_DATA:
+      address = page[0]
+      length  = page[1]
+      print("Verifying addr: ", address)
+      updater.verify_block(address, length, page[2:])
+  else:
+    print("Failed starting verify...")
 
 print("Resetting...")
 updater.reset()
 updater.handle_fw_info()
 while True:
   print(updater.handle_exception())
+  time.sleep(1)
