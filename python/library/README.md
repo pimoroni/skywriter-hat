@@ -3,6 +3,13 @@ Skywriter
 
 Support code and API library for the Skywriter Raspberry Pi HAT and breakout board.
 
+Pre-Requisites
+==============
+
+Skywriter needs i2c enabled, you can use raspi-config to do this, or run:
+
+    curl -sSL get.pimoroni.com/i2c | bash
+
 Installation
 ============
 
