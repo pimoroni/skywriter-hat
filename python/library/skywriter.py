@@ -54,8 +54,13 @@ _on_flick    = None
 _on_move     = None
 _on_airwheel = []
 _on_touch    = {}
+_on_touch_repeat = {}
+_on_touch_last   = {}
 _on_garbage  = None
 _on_circle   = {}
+
+def millis():
+  return int(round(time.time() * 1000))
 
 def reset():
   GPIO.output(SW_RESET_PIN, GPIO.LOW)
@@ -214,15 +219,36 @@ def handle_sensor_data(data):
     comp = 0b0000000000000001 << len(actions)-1
     for action in reversed(actions):
       if d_action & comp:
-        #print(action, d_touchcount)
 
+        handle_touch = False
         if action[0] in _on_touch.keys() and action[1] in _on_touch[action[0]].keys():
-          if callable(_on_touch[action[0]][action[1]]):
+          if not action[0] in _on_touch_last.keys():
+            _on_touch_last[action[0]] = {}
+            handle_touch = True
+          if not action[1] in _on_touch_last[action[0]].keys():
+            _on_touch_last[action[0]][action[1]] = None
+            handle_touch = True
+
+          elif (millis() - _on_touch_last[action[0]][action[1]]) >= 1000.0 / _on_touch_repeat[action[0]][action[1]]:
+            handle_touch = True
+
+          if callable(_on_touch[action[0]][action[1]]) and handle_touch:
             _on_touch[action[0]][action[1]]()
+            _on_touch_last[action[0]][action[1]] = millis()
 
         if action[0] in _on_touch.keys() and 'all' in _on_touch[action[0]].keys():
-          if callable(_on_touch[action[0]]['all']):
+          if not action[0] in _on_touch_last.keys():
+            _on_touch_last[action[0]] = {}
+            handle_touch = True
+          if not 'all' in _on_touch_last[action[0]].keys():
+            _on_touch_last[action[0]]['all'] = None
+            handle_touch = True
+          elif (millis() - _on_touch_last[action[0]]['all']) >= 1000.0 / _on_touch_repeat[action[0]]['all']:
+            handle_touch = True
+
+          if callable(_on_touch[action[0]]['all']) and handle_touch:
             _on_touch[action[0]]['all'](action[1])
+            _on_touch_last[action[0]]['all'] = millis()
 
         break
       comp = comp >> 1
@@ -235,8 +261,6 @@ def handle_sensor_data(data):
     Positive numbers equal clockwise delta, negative are counter-clockwise
     '''
     if delta != 0 and delta > -0.5 and delta < 0.5:
-      #rotation += (delta * 360.0)
-      #rotation %= 360.0
       if callable(_on_airwheel):
         _on_airwheel(delta * 360.0)
 
@@ -245,7 +269,6 @@ def handle_sensor_data(data):
         rotation = 0
       if rotation > 1000:
         rotation = 1000
-      #print('Airwheel:',delta, rotation)
     lastrotation = d_airwheel[0]
 '''
     if lastrotation > d_airwheel[0]:
@@ -328,89 +351,130 @@ def flick(*args, **kwargs):
   return register
 
 
-
 def touch(*args, **kwargs):
   '''
   Bind touch event
+
+  Keyword Arguments:
+  repeat_rate - Max number of times/second to fire the touch event
+  position - Position of touch to watch- north, south, east, west, center
   '''
-  global _on_touch
+  global _on_touch, _on_touch_repeat
 
   t_position = get_arg(kwargs, 'position', 'all')
+  t_repeat_rate = get_arg(kwargs, 'repeat_rate', 4)
 
   if not 'touch' in _on_touch.keys():
     _on_touch['touch'] = {}
+  if not 'touch' in _on_touch_repeat.keys():
+    _on_touch_repeat['touch'] = {}
 
   def register(handler):
-    global _on_touch
+    global _on_touch, _on_touch_repeat
     _on_touch['touch'][t_position] = handler
+    _on_touch_repeat['touch'][t_position] = t_repeat_rate
 
   return register
-
 
 
 def tap(*args, **kwargs):
   '''
   Bind tap event
+
+  Keyword Arguments:
+  repeat_rate - Max number of times/second to fire the touch event
+  position - Position of tap to watch- north, south, east, west, center
   '''
-  global _on_touch
+  global _on_touch, _on_touch_repeat
 
   t_position = get_arg(kwargs, 'position', 'all')
+  t_repeat_rate = get_arg(kwargs, 'repeat_rate', 4)
 
   if not 'tap' in _on_touch.keys():
     _on_touch['tap'] = {}
+  if not 'tap' in _on_touch_repeat.keys():
+    _on_touch_repeat['tap'] = {}
 
   def register(handler):
-    global _on_touch
+    global _on_touch, _on_touch_repeat
     _on_touch['tap'][t_position] = handler
+    _on_touch_repeat['tap'][t_position] = t_repeat_rate
 
   return register
-
 
 
 def double_tap(*args, **kwargs):
   '''
   Bind double tap event
+
+  Keyword Arguments:
+  repeat_rate - Max number of times/second to fire the double tap event
+  position - Position of double tap to watch- north, south, east, west, center
   '''
-  global _on_touch
+  global _on_touch, _on_touch_repeat
 
   t_position = get_arg(kwargs, 'position', 'all')
+  t_repeat_rate = get_arg(kwargs, 'repeat_rate', 4)
 
   if not 'doubletap' in _on_touch.keys():
     _on_touch['doubletap'] = {}
+  if not 'doubletap' in _on_touch_repeat.keys():
+    _on_touch_repeat['doubletap'] = {}
 
   def register(handler):
     global _on_touch
     _on_touch['doubletap'][t_position] = handler
+    _on_touch_repeat['doubletap'][t_position] = t_repeat_rate
 
   return register
 
 
 def garbage():
+  '''
+  Bind an action to the "garbage" gesture
+  A sort of grab-and-throw-away-garbage above the Skywriter
+  '''
   def register(handler):
     global _on_garbage
     _on_garbage = handler
   return register
 
 
-
 def move():
+  '''
+  Bind an action to move
+
+  The handler will receive x, y and z values
+  describing the tracked finger in 3D space above
+  the Skywriter.
+  '''
   def register(handler):
     global _on_move
     _on_move = handler
   return register
 
+
 def airwheel():
+  '''
+  Bind an action to the "airhweel" gesture
+
+  Point your finger at the Skywriter and spin it in a wheel
+  The handler will receive a rotation delta in degrees
+  '''
   def register(handler):
     global _on_airwheel
     _on_airwheel = handler
   return register
+
 
 def _exit():
   stop_poll()
   if GPIO != None:
     GPIO.cleanup()
 
+
 atexit.register(_exit)
+
 
 reset()
 i2c.write_i2c_block_data(SW_ADDR, 0xa1, [0b00000000, 0b00011111, 0b00000000, 0b00011111])
