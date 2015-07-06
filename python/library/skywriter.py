@@ -286,6 +286,7 @@ def handle_firmware_info(data):
   print(d_fw_version)
 
 def _do_poll():
+  global io_error_count
 
   if not GPIO.input(SW_XFER_PIN):
     '''
@@ -293,7 +294,14 @@ def _do_poll():
     MGC3130 doesn't update data buffers
     '''
     GPIO.setup(SW_XFER_PIN, GPIO.OUT, initial=GPIO.LOW)
-    data = i2c.read_i2c_block_data(SW_ADDR, 0x00, 26)
+    try:
+      data = i2c.read_i2c_block_data(SW_ADDR, 0x00, 26)
+      io_error_count = 0
+    except IOError:
+      io_error_count += 1
+      if io_error_count > 10:
+        raise Exception("Skywriter encoutered nore than 10 consecutive I2C IO errors!")
+      return
 
 
     '''
