@@ -11,7 +11,8 @@ void _SkyWriter::begin(unsigned char pin_xfer, unsigned char pin_reset){
   pinMode(this->xfer, INPUT_PULLUP);
   pinMode(this->rst,  OUTPUT);
   digitalWrite(this->rst, LOW);
-  pinMode(this->rst, INPUT);
+  delay(10);
+  digitalWrite(this->rst, HIGH);
   delay(50);
 }
 
