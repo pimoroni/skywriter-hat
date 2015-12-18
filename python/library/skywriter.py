@@ -7,6 +7,9 @@ import threading, time, atexit, sys
 import RPi.GPIO as GPIO
 
 SW_ADDR = 0x42
+SW_RESET_PIN = 17
+SW_XFER_PIN  = 27
+
 SW_HEADER_SIZE   = 4
 
 SW_DATA_DSP      = 0b0000000000000001
@@ -26,17 +29,6 @@ def i2c_bus_id():
   return 1 if int(revision, 16) >= 4 else 0
 
 i2c = SMBus(i2c_bus_id())
-
-try:
-  if i2c.read_i2c_block_data(0x28, 0x00, 1):
-    '''
-    polls for presence of an Explorer HAT
-    '''
-    SW_RESET_PIN = 9
-    SW_XFER_PIN  = 10
-except Exception:
-    SW_RESET_PIN = 17
-    SW_XFER_PIN  = 27
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(SW_RESET_PIN, GPIO.OUT, initial=GPIO.HIGH)

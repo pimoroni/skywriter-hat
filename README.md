@@ -4,11 +4,7 @@ This repository contains libraries and examples for the Skywriter boards.
 
 ##Installing Software
 
-We've created a super-easy installation script that will install all pre-requisites and get your HAT up and running in a jiffy. To run it fire up Terminal which you'll find in Menu -> Accessories -> Terminal on your Raspberry Pi desktop like so:
-
-![Finding the terminal](terminal.jpg)
-
-In the new terminal window type the following and follow the instructions:
+You can usually use our quick-n-easy installer to get Skywriter up and running on a Pi. Type the following into a terminal on your Raspberry Pi, use LXTerminal if you're looking at the desktop:
 
 ```
 curl -sSL get.pimoroni.com/skywriter | bash
