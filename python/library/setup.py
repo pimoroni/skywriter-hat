@@ -38,7 +38,7 @@ classifiers = ['Development Status :: 5 - Production/Stable',
                'Topic :: System :: Hardware']
 
 setup(name		= 'skywriter',
-	version		= '0.0.2',
+	version		= '0.0.5',
 	author		= 'Philip Howard',
 	author_email	= 'phil@pimoroni.com',
 	description	= 'Skywriter HAT Driver',
