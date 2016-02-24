@@ -287,6 +287,12 @@ def handle_firmware_info(data):
 
   print(d_fw_version)
 
+  if d_fw_valid == 0:
+    raise Exception("No valid GestIC Library could be located")
+
+  if d_fw_valid == 0x0A:
+    raise Exception("An invalid GestiIC Library was stored, or the last update failed")
+
 def _do_poll():
   global io_error_count
 
