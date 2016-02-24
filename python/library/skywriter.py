@@ -41,6 +41,8 @@ rotation = 0.0
 lastrotation = 0.0
 gesture = 0
 
+io_error_count = 0
+
 worker = None
 _on_flick    = None
 _on_move     = None
