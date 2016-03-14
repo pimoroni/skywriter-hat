@@ -11,7 +11,7 @@ We've created a super-easy installation script that will install all pre-requisi
 In the new terminal window type the following and follow the instructions:
 
 ```
-curl -sSL get.pimoroni.com/skywriter | bash
+curl -sS get.pimoroni.com/skywriter | bash
 ```
 
 For full instructions on installing Skywriter, check out [the library README file](/python/library/README.md).
