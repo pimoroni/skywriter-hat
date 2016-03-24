@@ -295,7 +295,7 @@ def handle_firmware_info(data):
 
 def _do_poll():
   global io_error_count
-
+  time.sleep(0.001)
   if not GPIO.input(SW_XFER_PIN):
     '''
     Assert transfer line low to ensure
