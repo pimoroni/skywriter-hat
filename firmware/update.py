@@ -110,7 +110,6 @@ import i2c
 import time
 import RPi.GPIO as GPIO
 
-
 SW_ADDR      = 0x42
 SW_RESET_PIN = 17
 SW_XFER_PIN  = 27
@@ -179,6 +178,7 @@ class Skyware():
       if result[4] == FW_UPDATE_START and result[6] == 0:
         return True  # Start success
       elif result[4] == FW_UPDATE_START:
+        print("FAILED TO START UPDATE",result[0:10])
         return False # Start failed
     return False
 
@@ -368,24 +368,79 @@ class Payload(list):
         list.append(self,item)
 
 updater = Skyware()
-updater.reset()
 
-updater.handle_fw_info()
-
-verify = True
 update_loader = True
+loader_wait_time = 30
+verify = False
 
-if update_loader:
+success = False
+while success == False:
+  updater.reset()
+  updater.handle_fw_info()
 
-  print("Starting loader update...")
-  if updater.update_begin(fw.LDR_IV):
-    print("Loader update started...")
+  if update_loader:
+
+    print("Starting loader update...")
+    if updater.update_begin(fw.LDR_IV):
+      print("Loader update started...")
+    else:
+      print("Loader update failed!")
+      print("Retrying...")
+      continue
+
+    idx = 0
+    for page in fw.LDR_UPDATE_DATA:
+      address = page[0]
+      length  = page[1]
+      print(str(idx) + ": Updating addr: ", address)
+      updater.update_block(address, length, page[2:])
+      idx+=1
+
+    print("Finishing update...")
+    if updater.update_complete(fw.LDR_VERSION):
+      print("Update finished successfully")
+    else:
+     print("Finishing update failed!")
+     print("Retrying...")
+     continue
+
+    #time.sleep(0.5)
+    updater.update_complete(fw.LDR_VERSION, True)
+
+    #print("Waiting " + str(loader_wait_time) + " sec for loader update to take effect...")
+    #time.sleep(loader_wait_time)
+
+    updater.handle_fw_info()
+
+    print("Hard reset...")
+    updater.reset()
+    print("Waiting for firmware info...")
+    updater.handle_fw_info()
+
+
+  '''
+  After power-on or hardware reset, the Library Loader
+  routine is executed.
+
+  FW_Version_Info message comes first, then a 100ms timeout
+  during which the library update should be initiated.
+
+  Once update is started, Library Loader should stay in
+  update mode until the next reset.
+  '''
+
+
+  if updater.update_begin(fw.FW_IV):
+    print("Started Library update...")
   else:
-    print("Loader update failed...")
-    exit()
+    print("Failed to start library update!")
+    print("Retrying...")
+    updater.reset()
+    time.sleep(4)
+    continue
 
   idx = 0
-  for page in fw.LDR_UPDATE_DATA:
+  for page in fw.FW_UPDATE_DATA:
     address = page[0]
     length  = page[1]
     print(str(idx) + ": Updating addr: ", address)
@@ -393,52 +448,12 @@ if update_loader:
     idx+=1
 
   print("Finishing update...")
-  updater.update_complete(fw.LDR_VERSION)
-  time.sleep(0.5)
-  updater.update_complete(fw.LDR_VERSION, True)
+  updater.update_complete(fw.FW_VERSION)
 
-  print("Waiting for loader update to take effect...")
-  updater.handle_fw_info()
+  print("Issuing reset...")
+  updater.update_complete(fw.FW_VERSION, True)
 
-  #print("Waiting 25 sec for loader update to take effect...")
-  #time.sleep(25)
-
-  print("Hard reset...")
-  updater.reset()
-  print("Waiting for firmware info...")
-  updater.handle_fw_info()
-
-
-'''
-After power-on or hardware reset, the Library Loader
-routine is executed.
-
-FW_Version_Info message comes first, then a 100ms timeout
-during which the library update should be initiated.
-
-Once update is started, Library Loader should stay in
-update mode until the next reset.
-'''
-
-if updater.update_begin(fw.FW_IV):
-  print("Started Library update...")
-else:
-  print("Failed to start library update..,")
-  exit()
-
-idx = 0
-for page in fw.FW_UPDATE_DATA:
-  address = page[0]
-  length  = page[1]
-  print(str(idx) + ": Updating addr: ", address)
-  updater.update_block(address, length, page[2:])
-  idx+=1
-
-print("Finishing update...")
-updater.update_complete(fw.FW_VERSION)
-
-print("Issuing reset...")
-updater.update_complete(fw.FW_VERSION, True)
+  success = True
 
 time.sleep(1)
 updater.reset()
@@ -457,9 +472,9 @@ if verify:
   else:
     print("Failed starting verify...")
 
-print("Resetting...")
-updater.reset()
-updater.handle_fw_info()
-while True:
-  print(updater.handle_exception())
-  time.sleep(1)
+#print("Resetting...")
+#updater.reset()
+#updater.handle_fw_info()
+#while True:
+#  print(updater.handle_exception())
+#  time.sleep(1)
