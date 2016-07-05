@@ -48,5 +48,5 @@ setup(name		= 'skywriter',
 	url		= 'http://www.pimoroni.com',
 	classifiers     = classifiers,
 	py_modules	= ['skywriter'],
-	install_requires= ['smbus']
+	install_requires= []
 )
