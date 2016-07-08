@@ -24,12 +24,15 @@ SW_FW_VERSION    = 0x83
 SW_SET_RUNTIME   = 0xA2
 SW_SENSOR_DATA   = 0x91
 
+i2c_bus = 0
+
 if GPIO.RPI_REVISION == 2 or GPIO.RPI_REVISION == 3:
-    bus = smbus.SMBus(1)
-else:
-    bus = smbus.SMBus(0)
+    i2c_bus = 1
+
+i2c = SMBus(i2c_bus)
     
 GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
 GPIO.setup(SW_RESET_PIN, GPIO.OUT, initial=GPIO.HIGH)
 GPIO.setup(SW_XFER_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 

@@ -1,4 +1,4 @@
-#Skywriter
+![Skywriter](skywriter-logo.png)
 
 This repository contains libraries and examples for the Skywriter boards.
 
@@ -23,8 +23,8 @@ You can use a full-sized Skywriter board with your Raspberry Pi and our library 
 Skywriter  | Raspberry Pi
 -----------|--------------
 GND        | GND
-TRFR       | GPIO 27 
+TRFR       | GPIO 27
 RESET      | GPIO 17
-SCL        | GPIO 3 / SCL 
+SCL        | GPIO 3 / SCL
 SDA        | GPIO 2 / SDA
 VCC        | 3V
