@@ -1,0 +1,4 @@
+Changelog
+---------
+
+0.0.7 - Removed dependency upon smbus, tweak to Pi version detection
