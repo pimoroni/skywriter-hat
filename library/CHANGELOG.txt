@@ -1,4 +1,40 @@
-Changelog
----------
+0.0.7
+-----
 
-0.0.7 - Removed dependency upon smbus, tweak to Pi version detection
+* Removed dependency upon smbus
+* Tweak to Pi version detection
+
+0.0.6
+-----
+
+* Added sleep in _do_poll
+* Fixed weird reset logic
+* Raising exception on bad firmware
+
+0.0.5
+-----
+
+* Tweak to allow the odd IOError
+
+0.0.4
+-----
+
+* Added repeat_rate to touch decorator
+
+0.0.3
+-----
+
+* Tidying up
+
+0.0.2
+-----
+
+* Many changes and fixes
+
+ 
+
+0.0.1
+-----
+
+* Initial release
+

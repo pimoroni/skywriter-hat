@@ -1,0 +1,45 @@
+skywriter (0.0.7) UNRELEASED; urgency=low
+
+  * Removed dependency upon smbus
+  * Tweak to Pi version detection
+
+ -- Phil Howard <phil@pimoroni.com>  Thu, 07 Jul 2016 00:00:00 +0000
+
+skywriter (0.0.6) UNRELEASED; urgency=low
+
+  * Added sleep in _do_poll
+  * Fixed weird reset logic
+  * Raising exception on bad firmware
+
+ -- Phil Howard <phil@pimoroni.com>  Mon, 14 Mar 2016 00:00:00 +0000
+
+skywriter (0.0.5) UNRELEASED; urgency=low
+
+  * Tweak to allow the odd IOError
+
+ -- Phil Howard <phil@pimoroni.com>  Mon, 06 Jul 2015 12:00:00 +0000
+
+skywriter (0.0.4) UNRELEASED; urgency=low
+
+  * Added repeat_rate to touch decorator
+
+ -- Phil Howard <phil@pimoroni.com>  Mon, 06 Jul 2015 00:00:00 +0000
+
+skywriter (0.0.3) UNRELEASED; urgency=low
+
+  * Tidying up
+
+ -- Phil Howard <phil@pimoroni.com>  Thu, 11 Dec 2014 12:00:00 +0000
+
+skywriter (0.0.2) UNRELEASED; urgency=low
+
+  * Many changes and fixes
+
+ -- Phil Howard <phil@pimoroni.com>  Thu, 11 Dec 2014 00:00:00 +0000
+ 
+
+skywriter (0.0.1) UNRELEASED; urgency=low
+
+  * Initial release
+
+ -- Phil Howard <phil@pimoroni.com>  Thu, 13 Nov 2014 00:00:00 +0000
