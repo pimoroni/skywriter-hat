@@ -1,0 +1,12 @@
+README
+
+Skywriter senses objects above it in 3 dimensions, outputting an X, Y, Z axis which you can then use in your Python scripts. It also recognises gestures, including swipes and more.
+
+Learn more: https://shop.pimoroni.com/products/skywriter-hat
+For examples run: `curl -sS get.pimoroni.com/skywriter | bash`
+
+IMPORTANT
+
+Skywriter requires i2c.
+To enable run `curl get.pimoroni.com/i2c | bash`
+or use raspi-config and reboot your Raspberry Pi.
