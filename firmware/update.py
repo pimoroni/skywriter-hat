@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
-#
+#!/usr/bin/env python
+
 # Skywriter HAT GestIC Firmware Updater
 #
 ######################################################################
@@ -94,6 +94,18 @@
 # ---------
 # 120 bytes interpreted as a string, containing Firmware Version
 
+import binascii
+import random
+import time
+
+try:
+    import RPi.GPIO as GPIO
+except ImportError:
+    exit("This library requires the RPi.GPIO module\nInstall with: sudo pip install RPi.GPIO")
+
+import fw
+import i2c
+
 
 print("Warning!")
 print("You should not run this updater unless you have been told to do so")
@@ -104,11 +116,6 @@ print("Are you sure you want to continue? Type 'yes' to confirm:")
 if not input() == "yes":
   exit()
 
-import random, binascii
-import fw
-import i2c
-import time
-import RPi.GPIO as GPIO
 
 SW_ADDR      = 0x42
 SW_RESET_PIN = 17
@@ -225,8 +232,6 @@ class Skyware():
           print("Finish failed",result)
           return False # Finish failed
       return False
-
-
 
   
   def verify_block(self, block_addr, block_len, block_data):
