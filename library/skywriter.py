@@ -1,10 +1,21 @@
+import atexit
+import sys
+import threading
+import time
+
 try:
     from smbus import SMBus
 except ImportError:
-    exit("This library requires python-smbus\nInstall with: sudo apt-get install python-smbus")
+    if sys.version_info[0] < 3:
+        exit("This library requires python-smbus\nInstall with: sudo apt-get install python-smbus")
+    elif sys.version_info[0] == 3:
+        exit("This library requires python3-smbus\nInstall with: sudo apt-get install python3-smbus")
 
-import threading, time, atexit, sys
-import RPi.GPIO as GPIO
+try:
+    import RPi.GPIO as GPIO
+except ImportError:
+    exit("This library requires the RPi.GPIO module\nInstall with: sudo pip install RPi.GPIO")
+
 
 SW_ADDR = 0x42
 SW_RESET_PIN = 17

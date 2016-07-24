@@ -1,6 +1,9 @@
 #!/usr/bin/env python
-import skywriter
+
 import signal
+
+import skywriter
+
 
 some_value = 5000
 
