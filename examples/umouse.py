@@ -1,8 +1,15 @@
 #!/usr/bin/env python
-import skywriter
+
 import signal
-import uinput
 import time
+
+try:
+    import uinput
+except ImportError:
+    exit("This script requires the uinput module\nInstall with: sudo pip install python-uinput")
+
+import skywriter
+
 
 mouse = uinput.Device([uinput.REL_X, uinput.REL_Y, uinput.BTN_LEFT])
 

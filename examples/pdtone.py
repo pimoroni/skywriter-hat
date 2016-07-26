@@ -1,4 +1,10 @@
-import os, socket, time, subprocess, atexit, tempfile
+import atexit
+import os
+import socket
+import subprocess
+import tempfile
+import time
+
 
 class PDTone():
   def __init__(self, pd_file=None):
