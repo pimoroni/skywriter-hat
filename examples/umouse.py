@@ -6,7 +6,7 @@ import time
 try:
     import uinput
 except ImportError:
-    exit("This script requires the uinput module")
+    exit("This script requires the uinput module\nInstall with: sudo pip install python-uinput")
 
 import skywriter
 
