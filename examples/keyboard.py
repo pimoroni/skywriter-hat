@@ -1,7 +1,14 @@
 #!/usr/bin/env python
-import skywriter
+
 import signal
-import autopy
+
+try:
+    import autopy
+except ImportError:
+    exit("This script requires the autopy module\nInstall with: sudo pip install autopy")
+
+import skywriter
+
 
 some_value = 0
 

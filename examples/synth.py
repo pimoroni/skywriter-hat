@@ -1,7 +1,11 @@
 #!/usr/bin/env python
+
+import os
+import signal
+
 import skywriter
-import signal, os
 from pdtone import PDTone
+
 
 tone = PDTone()
 
