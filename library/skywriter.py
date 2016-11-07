@@ -1,14 +1,14 @@
 import atexit
-import sys
 import threading
 import time
+from sys import exit, version_info
 
 try:
     from smbus import SMBus
 except ImportError:
-    if sys.version_info[0] < 3:
+    if version_info[0] < 3:
         exit("This library requires python-smbus\nInstall with: sudo apt-get install python-smbus")
-    elif sys.version_info[0] == 3:
+    elif version_info[0] == 3:
         exit("This library requires python3-smbus\nInstall with: sudo apt-get install python3-smbus")
 
 try:
@@ -16,6 +16,7 @@ try:
 except ImportError:
     exit("This library requires the RPi.GPIO module\nInstall with: sudo pip install RPi.GPIO")
 
+__version__ = '0.0.7'
 
 SW_ADDR = 0x42
 SW_RESET_PIN = 17

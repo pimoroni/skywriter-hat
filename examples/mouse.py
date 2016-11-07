@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import signal
+from sys import exit
 
 try:
     import autopy
@@ -38,7 +39,7 @@ def spinny(delta):
   global some_value
   some_value += delta
   if some_value < 0:
-  	some_value = 0
+    some_value = 0
   if some_value > 10000:
     some_value = 10000
   print('Airwheel:', some_value/100)

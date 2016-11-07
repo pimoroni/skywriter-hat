@@ -2,6 +2,7 @@
 
 import signal
 import time
+from sys import exit
 
 try:
     import uinput
