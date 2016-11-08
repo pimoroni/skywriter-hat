@@ -1,4 +1,4 @@
-skywriter (0.0.7) UNRELEASED; urgency=low
+skywriter (0.0.7) stable; urgency=low
 
   * Removed dependency upon smbus
   * Tweak to Pi version detection
