@@ -317,18 +317,20 @@ def get_arg(args, arg, default = None):
     return default
 
 def flick(*args, **kwargs):
+    '''Bind flick event'''
+
     def register(handler):
         global _on_flick
         _on_flick = handler
+
     return register
 
 
 def touch(*args, **kwargs):
     '''Bind touch event
 
-    Keyword Arguments:
-    repeat_rate - Max number of times/second to fire the touch event
-    position - Position of touch to watch- north, south, east, west, center
+    :param repeat_rate: Max number of times/second to fire the touch event
+    :param position: Position of touch to watch- north, south, east, west, center
     '''
     global _on_touch, _on_touch_repeat
 
