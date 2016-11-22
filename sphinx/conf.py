@@ -11,6 +11,8 @@ import mock
 import sphinx_rtd_theme
 
 sys.modules['smbus'] = mock.Mock()
+sys.modules['RPi'] = mock.Mock()
+sys.modules['RPi.GPIO'] = mock.Mock()
 
 sys.path.insert(0, '../library/')
 
