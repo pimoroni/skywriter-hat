@@ -33,7 +33,7 @@ class PDTone():
         time.sleep(0.5)
         self.pid = int(pid.split(' ')[0])
         print("Started PD with PID: " + str(pid) + " File: " + pdfile)
-  
+
     def connect(self):
         attempts = 30
         while attempts:
@@ -44,7 +44,7 @@ class PDTone():
             break
         except socket.error:
             time.sleep(1)
-          attempts-=1
+            attempts-=1
 
     def stop_pd(self):
         if self.proc_pd != None:
@@ -65,10 +65,10 @@ class PDTone():
 
     def power_off(self):
         self.send('power 0')
- 
+
     def custom(self, k, f):
         self.send(k + ' ' + str(f))
-  
+
     def tone(self, f):
         self.send('tone ' + str(f))
 
