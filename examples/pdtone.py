@@ -38,23 +38,23 @@ class PDTone():
         attempts = 30
         while attempts:
             print("Attempting to connect to PD")
-        try:
-            self.socket.connect((self.addr,self.port))
-            print("Connected to PD")
-            break
-        except socket.error:
-            time.sleep(1)
-            attempts-=1
+            try:
+                self.socket.connect((self.addr,self.port))
+                print("Connected to PD")
+                break
+            except socket.error:
+                time.sleep(1)
+                attempts-=1
 
     def stop_pd(self):
         if self.proc_pd != None:
-        print("Killing PD instance")
-        self.proc_pd.terminate()
-        self.proc_pd = None
-        self.pid = None
-    if self.tempfile != None:
-        print("Removing temp file")
-        os.close(self.tempfile)
+            print("Killing PD instance")
+            self.proc_pd.terminate()
+            self.proc_pd = None
+            self.pid = None
+        if self.tempfile != None:
+            print("Removing temp file")
+            os.close(self.tempfile)
         os.remove(self.pd_file)
 
     def send(self, cmd):
