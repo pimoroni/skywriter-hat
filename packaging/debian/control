@@ -13,7 +13,7 @@ Architecture: all
 Section: python
 Depends: ${misc:Depends}, ${python:Depends}, python-rpi.gpio, python-smbus
 Suggests: i2c-tools
-Description: python library designed to control Skywriter.
+Description: Python library for the Pimoroni Skywriter.
  Skywriter senses objects above it in 3 dimensions, outputting an X, Y, Z axis
  which you can then use in your Python scripts. It also recognises gestures,
  including swipes and more.
@@ -25,7 +25,7 @@ Architecture: all
 Section: python
 Depends: ${misc:Depends}, ${python3:Depends}, python3-rpi.gpio, python3-smbus
 Suggests: i2c-tools
-Description: python library designed to control Skywriter.
+Description: Python library for the Pimoroni Skywriter.
  Skywriter senses objects above it in 3 dimensions, outputting an X, Y, Z axis
  which you can then use in your Python scripts. It also recognises gestures,
  including swipes and more.
