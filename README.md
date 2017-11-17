@@ -14,7 +14,7 @@ In the new terminal window type the following and follow the instructions:
 curl -sS get.pimoroni.com/skywriter | bash
 ```
 
-For full instructions on installing Skywriter, check out [the library README file](/python/library/README.md).
+For full instructions on installing Skywriter, check out [the library README file](/library/README.md).
 
 ##Documentation & Support
 
