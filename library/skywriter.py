@@ -7,14 +7,14 @@ try:
     from smbus import SMBus
 except ImportError:
     if version_info[0] < 3:
-        exit("This library requires python-smbus\nInstall with: sudo apt-get install python-smbus")
+        raise ImportError("This library requires python-smbus\nInstall with: sudo apt-get install python-smbus")
     elif version_info[0] == 3:
-        exit("This library requires python3-smbus\nInstall with: sudo apt-get install python3-smbus")
+        raise ImportError("This library requires python3-smbus\nInstall with: sudo apt-get install python3-smbus")
 
 try:
     import RPi.GPIO as GPIO
 except ImportError:
-    exit("This library requires the RPi.GPIO module\nInstall with: sudo pip install RPi.GPIO")
+    raise ImportError("This library requires the RPi.GPIO module\nInstall with: sudo pip install RPi.GPIO")
 
 __version__ = '0.0.7'
 
@@ -37,16 +37,11 @@ SW_SET_RUNTIME = 0xA2
 SW_SENSOR_DATA = 0x91
 
 i2c_bus = 0
+i2c = None
 
 if GPIO.RPI_REVISION == 2 or GPIO.RPI_REVISION == 3:
     i2c_bus = 1
 
-i2c = SMBus(i2c_bus)
-        
-GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)
-GPIO.setup(SW_RESET_PIN, GPIO.OUT, initial=GPIO.HIGH)
-GPIO.setup(SW_XFER_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 x = 0.0
 y = 0.0
@@ -66,6 +61,8 @@ _on_touch_repeat = {}
 _on_touch_last = {}
 _on_garbage = None
 _on_circle = {}
+_is_setup = False
+
 
 def millis():
     return int(round(time.time() * 1000))
@@ -116,6 +113,7 @@ class AsyncWorker(StoppableThread):
             if self.todo() == False:
                 self.stop_event.set()
                 break
+
 
 def _handle_sensor_data(data):
     global _lastrotation, rotation
@@ -246,8 +244,10 @@ def _handle_sensor_data(data):
 
         _lastrotation = d_airwheel[0]
 
+
 def _handle_status_info(data):
     error = data[7] << 8 | data[6]
+
 
 def _handle_firmware_info(data):
     print('Got firmware info')
@@ -266,6 +266,7 @@ def _handle_firmware_info(data):
 
     if d_fw_valid == 0x0A:
         raise Exception("An invalid GestiIC Library was stored, or the last update failed")
+
 
 def _do_poll():
     global io_error_count
@@ -301,23 +302,23 @@ def _do_poll():
 
         GPIO.setup(SW_XFER_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
+
 def _start_poll():
     global _worker
     if _worker == None:
         _worker = AsyncWorker(_do_poll)
     _worker.start()
 
+
 def _stop_poll():
     global _worker
     _worker.stop()
 
-def get_arg(args, arg, default = None):
-    if arg in args.keys():
-        return args[arg]
-    return default
 
 def flick(*args, **kwargs):
     '''Bind flick event'''
+
+    setup()
 
     def register(handler):
         global _on_flick
@@ -334,8 +335,10 @@ def touch(*args, **kwargs):
     '''
     global _on_touch, _on_touch_repeat
 
-    t_position = get_arg(kwargs, 'position', 'all')
-    t_repeat_rate = get_arg(kwargs, 'repeat_rate', 4)
+    setup()
+
+    t_position = kwargs.get('position', 'all')
+    t_repeat_rate = kwargs.get('repeat_rate', 4)
 
     if not 'touch' in _on_touch.keys():
         _on_touch['touch'] = {}
@@ -358,8 +361,10 @@ def tap(*args, **kwargs):
     '''
     global _on_touch, _on_touch_repeat
 
-    t_position = get_arg(kwargs, 'position', 'all')
-    t_repeat_rate = get_arg(kwargs, 'repeat_rate', 4)
+    setup()
+
+    t_position = kwargs.get('position', 'all')
+    t_repeat_rate = kwargs.get('repeat_rate', 4)
 
     if not 'tap' in _on_touch.keys():
         _on_touch['tap'] = {}
@@ -382,8 +387,10 @@ def double_tap(*args, **kwargs):
     '''
     global _on_touch, _on_touch_repeat
 
-    t_position = get_arg(kwargs, 'position', 'all')
-    t_repeat_rate = get_arg(kwargs, 'repeat_rate', 4)
+    setup()
+
+    t_position = kwargs.get('position', 'all')
+    t_repeat_rate = kwargs.get('repeat_rate', 4)
 
     if not 'doubletap' in _on_touch.keys():
         _on_touch['doubletap'] = {}
@@ -403,6 +410,9 @@ def garbage():
 
     A sort of grab-and-throw-away-garbage above the Skywriter
     '''
+
+    setup()
+
     def register(handler):
         global _on_garbage
         _on_garbage = handler
@@ -417,6 +427,9 @@ def move():
     describing the tracked finger in 3D space above
     the Skywriter.
     '''
+
+    setup()
+
     def register(handler):
         global _on_move
         _on_move = handler
@@ -430,6 +443,9 @@ def airwheel():
     Point your finger at the Skywriter and spin it in a wheel
     The handler will receive a rotation delta in degrees
     '''
+
+    setup()
+
     def register(handler):
         global _on_airwheel
         _on_airwheel = handler
@@ -443,20 +459,35 @@ def _exit():
         GPIO.cleanup()
 
 
-atexit.register(_exit)
+def setup():
+    global i2c, _is_setup
 
+    if _is_setup:
+        return True
 
-reset()
+    _is_setup = True
 
-#                                 Size  Flags  Seq   ID      Command        Reserved      Argument 1                     Argument 2    
+    i2c = SMBus(i2c_bus)
 
-# Enable all gestures and X/Y/Z data, 0 = Garbage, 1 = Flick WE, 2 = Flick EW, 3 = Flick SN, 4 = Flick NS, 5 = Circle CW, 6 = Circle CCW
-i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0x85, 0x00,    0x00, 0x00,   0b00111111, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00])
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setwarnings(False)
+    GPIO.setup(SW_RESET_PIN, GPIO.OUT, initial=GPIO.HIGH)
+    GPIO.setup(SW_XFER_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-# Enable all data output 0 = DSP, 1 = Gestue, 2 = Touch, 3 = AirWheel, 4 = Position
-i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0xA0, 0x00,    0x00, 0x00,   0b00011111, 0x00, 0x00, 0x00,  0b00011111, 0x00, 0x00, 0x00])
+    atexit.register(_exit)
 
-# Disable auto-calibration
-i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0x80, 0x00 ,   0x00, 0x00,   0x00, 0x00, 0x00, 0x00,        0x00, 0x00, 0x00, 0x00])
+    reset()
 
-_start_poll()
+    #                                 Size  Flags  Seq   ID      Command        Reserved      Argument 1                     Argument 2
+
+    # Enable all gestures and X/Y/Z data, 0 = Garbage, 1 = Flick WE, 2 = Flick EW, 3 = Flick SN, 4 = Flick NS, 5 = Circle CW, 6 = Circle CCW
+    i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0x85, 0x00,    0x00, 0x00,   0b00111111, 0x00, 0x00, 0x00,  0b00111111, 0x00, 0x00, 0x00])
+
+    # Enable all data output 0 = DSP, 1 = Gesture, 2 = Touch, 3 = AirWheel, 4 = Position
+    i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0xA0, 0x00,    0x00, 0x00,   0b00011111, 0x00, 0x00, 0x00,  0b11111111, 0xff, 0xff, 0xff])
+
+    # Disable auto-calibration
+    i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0x80, 0x00 ,   0x00, 0x00,   0x00, 0x00, 0x00, 0x00,        0x00, 0x00, 0x00, 0x00])
+
+    _start_poll()
+
