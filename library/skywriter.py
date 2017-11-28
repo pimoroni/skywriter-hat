@@ -108,6 +108,9 @@ class AsyncWorker(StoppableThread):
         StoppableThread.__init__(self)
         self.todo = todo
 
+    def stop(self):
+        self.stop_event.set()
+
     def run(self):
         while self.stop_event.is_set() == False:
             if self.todo() == False:
@@ -305,14 +308,15 @@ def _do_poll():
 
 def _start_poll():
     global _worker
-    if _worker == None:
+    if _worker is None:
         _worker = AsyncWorker(_do_poll)
     _worker.start()
 
 
 def _stop_poll():
     global _worker
-    _worker.stop()
+    if _worker is not None:
+        _worker.stop()
 
 
 def flick(*args, **kwargs):
@@ -476,18 +480,28 @@ def setup():
 
     atexit.register(_exit)
 
+    def print_hex(l):
+        pass
+        #print(" ".join([hex(x) for x in l]))
+
     reset()
+    print_hex(i2c.read_i2c_block_data(SW_ADDR, 0x00, 26))
 
     #                                 Size  Flags  Seq   ID      Command        Reserved      Argument 1                     Argument 2
 
     # Enable all gestures and X/Y/Z data, 0 = Garbage, 1 = Flick WE, 2 = Flick EW, 3 = Flick SN, 4 = Flick NS, 5 = Circle CW, 6 = Circle CCW
     i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0x85, 0x00,    0x00, 0x00,   0b01111111, 0x00, 0x00, 0x00,  0b01111111, 0x00, 0x00, 0x00])
+    time.sleep(0.001)
+    print_hex(i2c.read_i2c_block_data(SW_ADDR, 0x00, 26))
 
     # Enable all data output 0 = DSP, 1 = Gesture, 2 = Touch, 3 = AirWheel, 4 = Position
-    i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0xA0, 0x00,    0x00, 0x00,   0b00011111, 0x00, 0x00, 0x00,  0b11111111, 0xff, 0xff, 0xff])
+    i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0xA0, 0x00,    0x00, 0x00,   0b00011111, 0x00, 0x00, 0x00,  0b11111111, 0x00, 0x00, 0x00])
+    time.sleep(0.001)
+    print_hex(i2c.read_i2c_block_data(SW_ADDR, 0x00, 26))
 
     # Disable auto-calibration
     i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0x80, 0x00 ,   0x00, 0x00,   0x00, 0x00, 0x00, 0x00,        0x00, 0x00, 0x00, 0x00])
-
+    time.sleep(0.001)
+    print_hex(i2c.read_i2c_block_data(SW_ADDR, 0x00, 26))
     _start_poll()
 
