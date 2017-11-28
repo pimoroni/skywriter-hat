@@ -2,7 +2,7 @@
 
 This repository contains libraries and examples for the Skywriter boards.
 
-##Installing Software
+## Installing Software
 
 We've created a super-easy installation script that will install all pre-requisites and get your HAT up and running in a jiffy. To run it fire up Terminal which you'll find in Menu -> Accessories -> Terminal on your Raspberry Pi desktop like so:
 
@@ -16,7 +16,7 @@ curl -sS get.pimoroni.com/skywriter | bash
 
 For full instructions on installing Skywriter, check out [the library README file](/library/README.md).
 
-##Documentation & Support
+## Documentation & Support
 
 * Function reference - http://docs.pimoroni.com/skywriter/
 * GPIO Pinout - https://pinout.xyz/pinout/skywriter_hat
