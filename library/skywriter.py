@@ -481,7 +481,7 @@ def setup():
     #                                 Size  Flags  Seq   ID      Command        Reserved      Argument 1                     Argument 2
 
     # Enable all gestures and X/Y/Z data, 0 = Garbage, 1 = Flick WE, 2 = Flick EW, 3 = Flick SN, 4 = Flick NS, 5 = Circle CW, 6 = Circle CCW
-    i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0x85, 0x00,    0x00, 0x00,   0b00111111, 0x00, 0x00, 0x00,  0b00111111, 0x00, 0x00, 0x00])
+    i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0x85, 0x00,    0x00, 0x00,   0b01111111, 0x00, 0x00, 0x00,  0b01111111, 0x00, 0x00, 0x00])
 
     # Enable all data output 0 = DSP, 1 = Gesture, 2 = Touch, 3 = AirWheel, 4 = Position
     i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0xA0, 0x00,    0x00, 0x00,   0b00011111, 0x00, 0x00, 0x00,  0b11111111, 0xff, 0xff, 0xff])
