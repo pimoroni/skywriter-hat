@@ -22,7 +22,7 @@ For full instructions on installing Skywriter, check out [the library README fil
 * GPIO Pinout - https://pinout.xyz/pinout/skywriter_hat
 * Get help - http://forums.pimoroni.com/c/support
 
-##Skywriter to Pi Connection
+## Skywriter to Pi Connection
 
 You can use a full-sized Skywriter board with your Raspberry Pi and our library by mimicking the connections that the HAT users. They are as follows:
 
