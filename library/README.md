@@ -3,7 +3,7 @@ Skywriter
 
 Support code and API library for the Skywriter Raspberry Pi HAT and breakout board.
 
-##Quick-Install
+## Quick-Install
 
 If you're using Skywriter on a Raspberry Pi, you can use our quick installer to get everything set up and configured for you. Just open up LXTerminal and type:
 
@@ -11,9 +11,9 @@ If you're using Skywriter on a Raspberry Pi, you can use our quick installer to 
 curl -sSL get.pimoroni.com/skywriter | bash
 ```
 
-##Step-by-Step Install
+## Step-by-Step Install
 
-###Pre-Requisites
+### Pre-Requisites
 
 Skywriter needs i2c enabled, you can use raspi-config to do this, or run:
 
@@ -27,16 +27,16 @@ You'll also need to install smbus:
 sudo apt-get install python-smbus
 ```
 
-###Installation
+### Installation
 
-####From pip
+#### From pip
 
 ```
 sudo apt-get install python-pip
 sudo pip install skywriter
 ```
 
-####From source
+#### From source
 
 Clone this library, make your way into this directory:
 
