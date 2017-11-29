@@ -48,6 +48,10 @@ y = 0.0
 z = 0.0
 rotation = 0.0
 _lastrotation = 0.0
+_round_to = 4
+_enable_auto_calibration = False
+_enable_events = True
+_debug = False
 gesture = 0
 
 io_error_count = 0
@@ -72,6 +76,10 @@ def reset():
     time.sleep(.1)
     GPIO.output(SW_RESET_PIN, GPIO.HIGH)
     time.sleep(.5) # Datasheet delay of 200ms plus change
+
+def enable(status=True):
+    global _enable_events
+    _enable_events = status
 
 class StoppableThread(threading.Thread):
     '''Basic stoppable thread wrapper
@@ -135,9 +143,9 @@ def _handle_sensor_data(data):
     if d_configmask & SW_DATA_XYZ and d_sysinfo & 0b0000001:
         # We have xyz info, and it's valid
         x, y, z = (
-            (d_xyz[1] << 8 | d_xyz[0]) / 65536.0,
-            (d_xyz[3] << 8 | d_xyz[2]) / 65536.0,
-            (d_xyz[5] << 8 | d_xyz[4]) / 65536.0
+            round((d_xyz[1] << 8 | d_xyz[0]) / 65536.0, _round_to),
+            round((d_xyz[3] << 8 | d_xyz[2]) / 65536.0, _round_to),
+            round((d_xyz[5] << 8 | d_xyz[4]) / 65536.0, _round_to)
         ) 
         if callable(_on_move):
             _on_move(x, y, z)
@@ -273,16 +281,23 @@ def _handle_firmware_info(data):
 
 def _do_poll():
     global io_error_count
+
     time.sleep(0.001)
+
+    if not _enable_events:
+        return
+
     if not GPIO.input(SW_XFER_PIN):
         '''
         Assert transfer line low to ensure
         MGC3130 doesn't update data buffers
         '''
         GPIO.setup(SW_XFER_PIN, GPIO.OUT, initial=GPIO.LOW)
+
         try:
             data = i2c.read_i2c_block_data(SW_ADDR, 0x00, 26)
             io_error_count = 0
+
         except IOError:
             io_error_count += 1
             if io_error_count > 10:
@@ -296,12 +311,16 @@ def _do_poll():
 
         if d_ident == 0x91:
             _handle_sensor_data(data)
+
         elif d_ident == 0x15:
             _handle_status_info(data)
+
         elif d_ident == 0x83:
             _handle_firmware_info(data)
+
         else:
             pass
+
 
         GPIO.setup(SW_XFER_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
@@ -317,6 +336,7 @@ def _stop_poll():
     global _worker
     if _worker is not None:
         _worker.stop()
+        _worker = None
 
 
 def flick(*args, **kwargs):
@@ -481,27 +501,50 @@ def setup():
     atexit.register(_exit)
 
     def print_hex(l):
-        pass
-        #print(" ".join([hex(x) for x in l]))
+        if _debug:
+            print(" ".join([hex(x) for x in l]))
+
+    def get_status(id):
+        for x in range(10):
+            time.sleep(0.001)
+            GPIO.setup(SW_XFER_PIN, GPIO.OUT, initial=GPIO.LOW)
+            data = i2c.read_i2c_block_data(SW_ADDR, 0x00, 26)
+            GPIO.setup(SW_XFER_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            if data[3] == 0x15 and data[4] == id:
+                print_hex(data)
+                return True
+
+        return False
 
     reset()
-    print_hex(i2c.read_i2c_block_data(SW_ADDR, 0x00, 26))
 
-    #                                 Size  Flags  Seq   ID      Command        Reserved      Argument 1                     Argument 2
+    #                                 Size  Flags  Seq   ID      Command        Reserved      Argument 0                     Argument 1
+    # Command, Argument 1 and Argument 2 are sent LSByte first, so 1 = 0x01 0x00 etc
+
+    # Enable AirWheel, requires 0x20 to be sent in Argument 0 and 1
+    if _debug: print("Enable AirWheel")
+    i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0x90, 0x00,    0x00, 0x00,  0x20, 0x00, 0x00, 0x00,         0x20, 0x00, 0x00, 0x00])
+    if not get_status(0xA2):
+        raise RuntimeError("Invalid response for SET_RUNTIME_PARAMETER")
 
     # Enable all gestures and X/Y/Z data, 0 = Garbage, 1 = Flick WE, 2 = Flick EW, 3 = Flick SN, 4 = Flick NS, 5 = Circle CW, 6 = Circle CCW
+    if _debug: print("Enable all gestures")
     i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0x85, 0x00,    0x00, 0x00,   0b01111111, 0x00, 0x00, 0x00,  0b01111111, 0x00, 0x00, 0x00])
-    time.sleep(0.001)
-    print_hex(i2c.read_i2c_block_data(SW_ADDR, 0x00, 26))
+    if not get_status(0xA2):
+        raise RuntimeError("Invalid response for SET_RUNTIME_PARAMETER")
 
     # Enable all data output 0 = DSP, 1 = Gesture, 2 = Touch, 3 = AirWheel, 4 = Position
-    i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0xA0, 0x00,    0x00, 0x00,   0b00011111, 0x00, 0x00, 0x00,  0b11111111, 0x00, 0x00, 0x00])
-    time.sleep(0.001)
-    print_hex(i2c.read_i2c_block_data(SW_ADDR, 0x00, 26))
+    if _debug: print("Enable all data output")
+    i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0xA0, 0x00,    0x00, 0x00,   0b00011111, 0x00, 0x00, 0x00,  0b00011111, 0x00, 0x00, 0x00])
+    if not get_status(0xA2):
+        raise RuntimeError("Invalid response for SET_RUNTIME_PARAMETER")
 
     # Disable auto-calibration
-    i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0x80, 0x00 ,   0x00, 0x00,   0x00, 0x00, 0x00, 0x00,        0x00, 0x00, 0x00, 0x00])
-    time.sleep(0.001)
-    print_hex(i2c.read_i2c_block_data(SW_ADDR, 0x00, 26))
+    if not _enable_auto_calibration:
+        if _debug: print("Disable auto-calibration")
+        i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0x80, 0x00 ,   0x00, 0x00,   0x00, 0x00, 0x00, 0x00,        0b00011111, 0x00, 0x00, 0x00])
+        if not get_status(0xA2):
+            raise RuntimeError("Invalid response for SET_RUNTIME_PARAMETER")
+
     _start_poll()
 
