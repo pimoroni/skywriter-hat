@@ -39,7 +39,7 @@ To run, you'll need to:
 
 And:
 
-    sudo pip install autopy
+    sudo pip install autopy==0.51
 
 
 pdtone.py
