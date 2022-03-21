@@ -39,15 +39,16 @@ classifiers = ['Development Status :: 5 - Production/Stable',
 
 setup(
     name            = 'skywriter',
-    version         = '0.0.7',
+    version         = '0.0.8.post1',
     author          = 'Philip Howard',
     author_email    = 'phil@pimoroni.com',
     description     = 'Skywriter HAT Driver',
-    long_description= open('README.txt').read() + open('CHANGELOG.txt').read(),
+    long_description= open('README.md').read()  + "\n" + open('CHANGELOG.txt').read(),
+    long_description_content_type= "text/markdown",
     license         = 'MIT',
     keywords        = 'Raspberry Pi Skywriter Gesture HAT',
     url             = 'http://www.pimoroni.com',
     classifiers     = classifiers,
-    py_modules      = ['skywriter'],
+    packages        = ['skywriter'],
     install_requires= ['RPi.GPIO']
 )

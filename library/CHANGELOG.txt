@@ -1,3 +1,9 @@
+0.0.8
+-----
+
+* Fix for deprecated Thread.IsAlive()
+* Linting & tidyup
+
 0.0.7
 -----
 

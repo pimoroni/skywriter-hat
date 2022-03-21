@@ -1,7 +1,7 @@
 import atexit
 import threading
 import time
-from sys import exit, version_info
+from sys import version_info
 
 try:
     from smbus import SMBus
@@ -16,7 +16,7 @@ try:
 except ImportError:
     raise ImportError("This library requires the RPi.GPIO module\nInstall with: sudo pip install RPi.GPIO")
 
-__version__ = '0.0.7'
+__version__ = '0.0.8'
 
 SW_ADDR = 0x42
 SW_RESET_PIN = 17
@@ -71,15 +71,18 @@ _is_setup = False
 def millis():
     return int(round(time.time() * 1000))
 
+
 def reset():
     GPIO.output(SW_RESET_PIN, GPIO.LOW)
     time.sleep(.1)
     GPIO.output(SW_RESET_PIN, GPIO.HIGH)
-    time.sleep(.5) # Datasheet delay of 200ms plus change
+    time.sleep(.5)  # Datasheet delay of 200ms plus change
+
 
 def enable(status=True):
     global _enable_events
     _enable_events = status
+
 
 class StoppableThread(threading.Thread):
     '''Basic stoppable thread wrapper
@@ -90,7 +93,7 @@ class StoppableThread(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.stop_event = threading.Event()
-        self.daemon = True         
+        self.daemon = True
 
     def alive(self):
         try:
@@ -100,12 +103,12 @@ class StoppableThread(threading.Thread):
             return self.is_alive()
 
     def start(self):
-        if self.alive() == False:
+        if not self.alive():
             self.stop_event.clear()
             threading.Thread.start(self)
 
     def stop(self):
-        if self.alive() == True:
+        if self.alive():
             # set event to signal thread to terminate
             self.stop_event.set()
             # block calling thread until thread really has terminated
@@ -127,49 +130,49 @@ class AsyncWorker(StoppableThread):
         self.stop_event.set()
 
     def run(self):
-        while self.stop_event.is_set() == False:
-            if self.todo() == False:
+        while not self.stop_event.is_set():
+            if not self.todo():
                 self.stop_event.set()
                 break
 
 
 def _handle_sensor_data(data):
     global _lastrotation, rotation
-    
+
     d_configmask = data.pop(0) | data.pop(0) << 8
-    d_timestamp = data.pop(0) # 200hz, 8-bit counter, max ~1.25sec
+    # d_timestamp = data.pop(0)  # 200hz, 8-bit counter, max ~1.25sec
     d_sysinfo = data.pop(0)
-    
-    d_dspstatus = data[0:2]
+
+    # d_dspstatus = data[0:2]
     d_gesture = data[2:6]
     d_touch = data[6:10]
     d_airwheel = data[10:12]
     d_xyz = data[12:20]
-    d_noisepow = data[20:24]
- 
+    # d_noisepow = data[20:24]
+
     if d_configmask & SW_DATA_XYZ and d_sysinfo & 0b0000001:
         # We have xyz info, and it's valid
         x, y, z = (
             round((d_xyz[1] << 8 | d_xyz[0]) / 65536.0, _round_to),
             round((d_xyz[3] << 8 | d_xyz[2]) / 65536.0, _round_to),
             round((d_xyz[5] << 8 | d_xyz[4]) / 65536.0, _round_to)
-        ) 
+        )
         if callable(_on_move):
             _on_move(x, y, z)
-    
+
     if d_configmask & SW_DATA_GESTURE and not d_gesture[0] == 0:
         # We have a gesture!
-        is_edge = (d_gesture[3] & 0b00000001) > 0
+        # is_edge = (d_gesture[3] & 0b00000001) > 0
         gestures = [
-            ('garbage','',''),
-            ('flick','west','east'),
-            ('flick','east','west'),
-            ('flick','south','north'),
-            ('flick','north','south'),
-            ('circle','clockwise',''),
-            ('circle','counter-clockwise','')
+            ('garbage', '', ''),
+            ('flick', 'west', 'east'),
+            ('flick', 'east', 'west'),
+            ('flick', 'south', 'north'),
+            ('flick', 'north', 'south'),
+            ('circle', 'clockwise', ''),
+            ('circle', 'counter-clockwise', '')
         ]
-        for i,gesture in enumerate(gestures):
+        for i, gesture in enumerate(gestures):
             if d_gesture[0] == i + 1:
 
                 if gesture[0] == 'flick' and callable(_on_flick):
@@ -181,26 +184,26 @@ def _handle_sensor_data(data):
         # We have a touch
         d_action = d_touch[1] << 8 | d_touch[0]
 
-        d_touchcount = d_touch[2] * 5 # Time to touch in ms
+        # d_touchcount = d_touch[2] * 5 # Time to touch in ms
         actions = [
-            ('touch','south'),
-            ('touch','west'),
-            ('touch','north'),
-            ('touch','east'),
-            ('touch','center'),
-            ('tap','south'),
-            ('tap','west'),
-            ('tap','north'),
-            ('tap','east'),
-            ('tap','center'),
-            ('doubletap','south'),
-            ('doubletap','west'),
-            ('doubletap','north'),
-            ('doubletap','east'),
-            ('doubletap','center')
+            ('touch', 'south'),
+            ('touch', 'west'),
+            ('touch', 'north'),
+            ('touch', 'east'),
+            ('touch', 'center'),
+            ('tap', 'south'),
+            ('tap', 'west'),
+            ('tap', 'north'),
+            ('tap', 'east'),
+            ('tap', 'center'),
+            ('doubletap', 'south'),
+            ('doubletap', 'west'),
+            ('doubletap', 'north'),
+            ('doubletap', 'east'),
+            ('doubletap', 'center')
         ]
 
-        comp = 0b0000000000000001 << len(actions)-1
+        comp = 0b0000000000000001 << len(actions) - 1
         for action in reversed(actions):
             if d_action & comp:
 
@@ -227,7 +230,7 @@ def _handle_sensor_data(data):
                         _on_touch_last[action[0]] = {}
                         handle_touch = True
 
-                    if not 'all' in _on_touch_last[action[0]].keys():
+                    if 'all' not in _on_touch_last[action[0]].keys():
                         _on_touch_last[action[0]]['all'] = None
                         handle_touch = True
 
@@ -244,10 +247,10 @@ def _handle_sensor_data(data):
     if d_configmask & SW_DATA_AIRWHEEL and d_sysinfo & 0b00000010:
         # Airwheel
         delta = (d_airwheel[0] - _lastrotation) / 32.0
-        
+
         # Delta is in degrees, with 1 = full 360 degree rotation
         # Positive numbers equal clockwise delta, negative are counter-clockwise
-        
+
         if delta != 0 and delta > -0.5 and delta < 0.5:
             if callable(_on_airwheel):
                 _on_airwheel(delta * 360.0)
@@ -264,18 +267,19 @@ def _handle_sensor_data(data):
 
 
 def _handle_status_info(data):
-    error = data[7] << 8 | data[6]
+    # error = data[7] << 8 | data[6]
+    pass
 
 
 def _handle_firmware_info(data):
     print('Got firmware info')
 
     d_fw_valid = data.pop(0)
-    d_hw_rev = data.pop(0) | data.pop(0) << 8
-    d_param_st = data.pop(0)
-    d_loader_version = [ data.pop(0), data.pop(0), data.pop(0) ],
-    d_fw_st = data.pop(0)
-    d_fw_version = ''.join(map(chr,data))
+    # d_hw_rev = data.pop(0) | data.pop(0) << 8
+    # d_param_st = data.pop(0)
+    # d_loader_version = [ data.pop(0), data.pop(0), data.pop(0) ],
+    # d_fw_st = data.pop(0)
+    d_fw_version = ''.join(map(chr, data))
 
     print(d_fw_version)
 
@@ -311,9 +315,9 @@ def _do_poll():
                 raise Exception("Skywriter encoutered nore than 10 consecutive I2C IO errors!")
             return
 
-        d_size = data.pop(0)
-        d_flags = data.pop(0)
-        d_seq = data.pop(0)
+        # d_size = data.pop(0)
+        # d_flags = data.pop(0)
+        # d_seq = data.pop(0)
         d_ident = data.pop(0)
 
         if d_ident == 0x91:
@@ -327,7 +331,6 @@ def _do_poll():
 
         else:
             pass
-
 
         GPIO.setup(SW_XFER_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
@@ -371,9 +374,9 @@ def touch(*args, **kwargs):
     t_position = kwargs.get('position', 'all')
     t_repeat_rate = kwargs.get('repeat_rate', 4)
 
-    if not 'touch' in _on_touch.keys():
+    if 'touch' not in _on_touch.keys():
         _on_touch['touch'] = {}
-    if not 'touch' in _on_touch_repeat.keys():
+    if 'touch' not in _on_touch_repeat.keys():
         _on_touch_repeat['touch'] = {}
 
     def register(handler):
@@ -397,9 +400,9 @@ def tap(*args, **kwargs):
     t_position = kwargs.get('position', 'all')
     t_repeat_rate = kwargs.get('repeat_rate', 4)
 
-    if not 'tap' in _on_touch.keys():
+    if 'tap' not in _on_touch.keys():
         _on_touch['tap'] = {}
-    if not 'tap' in _on_touch_repeat.keys():
+    if 'tap' not in _on_touch_repeat.keys():
         _on_touch_repeat['tap'] = {}
 
     def register(handler):
@@ -423,9 +426,9 @@ def double_tap(*args, **kwargs):
     t_position = kwargs.get('position', 'all')
     t_repeat_rate = kwargs.get('repeat_rate', 4)
 
-    if not 'doubletap' in _on_touch.keys():
+    if 'doubletap' not in _on_touch.keys():
         _on_touch['doubletap'] = {}
-    if not 'doubletap' in _on_touch_repeat.keys():
+    if 'doubletap' not in _on_touch_repeat.keys():
         _on_touch_repeat['doubletap'] = {}
 
     def register(handler):
@@ -486,7 +489,7 @@ def airwheel():
 
 def _exit():
     _stop_poll()
-    if GPIO != None:
+    if GPIO is not None:
         GPIO.cleanup()
 
 
@@ -507,9 +510,9 @@ def setup():
 
     atexit.register(_exit)
 
-    def print_hex(l):
+    def print_hex(data):
         if _debug:
-            print(" ".join([hex(x) for x in l]))
+            print(" ".join([hex(x) for x in data]))
 
     def get_status(id):
         for x in range(10):
@@ -529,29 +532,32 @@ def setup():
     # Command, Argument 1 and Argument 2 are sent LSByte first, so 1 = 0x01 0x00 etc
 
     # Enable AirWheel, requires 0x20 to be sent in Argument 0 and 1
-    if _debug: print("Enable AirWheel")
-    i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0x90, 0x00,    0x00, 0x00,  0x20, 0x00, 0x00, 0x00,         0x20, 0x00, 0x00, 0x00])
+    if _debug:
+        print("Enable AirWheel")
+    i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0x90, 0x00,    0x00, 0x00,  0x20, 0x00, 0x00, 0x00,         0x20, 0x00, 0x00, 0x00])  # noqa: E241
     if not get_status(0xA2):
         raise RuntimeError("Invalid response for SET_RUNTIME_PARAMETER")
 
     # Enable all gestures and X/Y/Z data, 0 = Garbage, 1 = Flick WE, 2 = Flick EW, 3 = Flick SN, 4 = Flick NS, 5 = Circle CW, 6 = Circle CCW
-    if _debug: print("Enable all gestures")
-    i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0x85, 0x00,    0x00, 0x00,   0b01111111, 0x00, 0x00, 0x00,  0b01111111, 0x00, 0x00, 0x00])
+    if _debug:
+        print("Enable all gestures")
+    i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0x85, 0x00,    0x00, 0x00,   0b01111111, 0x00, 0x00, 0x00,  0b01111111, 0x00, 0x00, 0x00])  # noqa: E241
     if not get_status(0xA2):
         raise RuntimeError("Invalid response for SET_RUNTIME_PARAMETER")
 
     # Enable all data output 0 = DSP, 1 = Gesture, 2 = Touch, 3 = AirWheel, 4 = Position
-    if _debug: print("Enable all data output")
-    i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0xA0, 0x00,    0x00, 0x00,   0b00011111, 0x00, 0x00, 0x00,  0b00011111, 0x00, 0x00, 0x00])
+    if _debug:
+        print("Enable all data output")
+    i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0xA0, 0x00,    0x00, 0x00,   0b00011111, 0x00, 0x00, 0x00,  0b00011111, 0x00, 0x00, 0x00])  # noqa: E241
     if not get_status(0xA2):
         raise RuntimeError("Invalid response for SET_RUNTIME_PARAMETER")
 
     # Disable auto-calibration
     if not _enable_auto_calibration:
-        if _debug: print("Disable auto-calibration")
-        i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0x80, 0x00 ,   0x00, 0x00,   0x00, 0x00, 0x00, 0x00,        0b00011111, 0x00, 0x00, 0x00])
+        if _debug:
+            print("Disable auto-calibration")
+        i2c.write_i2c_block_data(SW_ADDR, 0x10, [0x00, 0x00, 0xA2,   0x80, 0x00,   0x00, 0x00,   0x00, 0x00, 0x00, 0x00,        0b00011111, 0x00, 0x00, 0x00])  # noqa: E241
         if not get_status(0xA2):
             raise RuntimeError("Invalid response for SET_RUNTIME_PARAMETER")
 
     _start_poll()
-
