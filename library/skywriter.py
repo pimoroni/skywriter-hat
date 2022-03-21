@@ -90,15 +90,22 @@ class StoppableThread(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.stop_event = threading.Event()
-        self.daemon = True                 
+        self.daemon = True         
+
+    def alive(self):
+        try:
+            return self.isAlive()
+        except AttributeError:
+            # Python >= 3.9
+            return self.is_alive()
 
     def start(self):
-        if self.isAlive() == False:
+        if self.alive() == False:
             self.stop_event.clear()
             threading.Thread.start(self)
 
     def stop(self):
-        if self.isAlive() == True:
+        if self.alive() == True:
             # set event to signal thread to terminate
             self.stop_event.set()
             # block calling thread until thread really has terminated
