@@ -140,7 +140,8 @@ def _handle_sensor_data(data):
     global _lastrotation, rotation
 
     d_configmask = data.pop(0) | data.pop(0) << 8
-    # d_timestamp = data.pop(0)  # 200hz, 8-bit counter, max ~1.25sec
+    # d_timestamp - 200hz, 8-bit counter, max ~1.25sec
+    data.pop(0)
     d_sysinfo = data.pop(0)
 
     # d_dspstatus = data[0:2]
@@ -275,10 +276,14 @@ def _handle_firmware_info(data):
     print('Got firmware info')
 
     d_fw_valid = data.pop(0)
-    # d_hw_rev = data.pop(0) | data.pop(0) << 8
-    # d_param_st = data.pop(0)
-    # d_loader_version = [ data.pop(0), data.pop(0), data.pop(0) ],
-    # d_fw_st = data.pop(0)
+    # d_hw_rev
+    _ = data.pop(0) | data.pop(0) << 8
+    # d_param_st
+    data.pop(0)
+    # d_loader_version
+    _ = [data.pop(0), data.pop(0), data.pop(0)]
+    # d_fw_st
+    data.pop(0)
     d_fw_version = ''.join(map(chr, data))
 
     print(d_fw_version)
@@ -315,9 +320,12 @@ def _do_poll():
                 raise Exception("Skywriter encoutered nore than 10 consecutive I2C IO errors!")
             return
 
-        # d_size = data.pop(0)
-        # d_flags = data.pop(0)
-        # d_seq = data.pop(0)
+        # d_size
+        data.pop(0)
+        # d_flags
+        data.pop(0)
+        # d_seq
+        data.pop(0)
         d_ident = data.pop(0)
 
         if d_ident == 0x91:
