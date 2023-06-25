@@ -16,7 +16,7 @@ try:
 except ImportError:
     raise ImportError("This library requires the RPi.GPIO module\nInstall with: sudo pip install RPi.GPIO")
 
-__version__ = '0.0.8'
+__version__ = '0.0.9'
 
 SW_ADDR = 0x42
 SW_RESET_PIN = 17
