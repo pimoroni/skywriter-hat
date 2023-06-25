@@ -275,9 +275,9 @@ def _handle_firmware_info(data):
     print('Got firmware info')
 
     d_fw_valid = data[0]
-    # d_hw_rev = data[2] << 8 | data[1]
+    # d_hw_rev = data[1] | data[2] << 8
     # d_param_st = data[3]
-    # d_loader_version = [data[4], data[5], data[6]]
+    # d_loader_version = data[4:7]
     # d_fw_st = data[7]
     d_fw_version = ''.join(map(chr, data[8:]))
 
