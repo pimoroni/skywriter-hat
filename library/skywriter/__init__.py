@@ -290,13 +290,13 @@ def _handle_firmware_info(data):
         raise Exception("An invalid GestiIC Library was stored, or the last update failed")
 
 
-def _do_poll():
+def _do_poll() -> bool:
     global io_error_count
 
     time.sleep(0.001)
 
     if not _enable_events:
-        return
+        return True
 
     if not GPIO.input(SW_XFER_PIN):
         '''
@@ -313,7 +313,7 @@ def _do_poll():
             io_error_count += 1
             if io_error_count > 10:
                 raise Exception("Skywriter encoutered nore than 10 consecutive I2C IO errors!")
-            return
+            return False
 
         # d_size = data.pop(0)
         # d_flags = data.pop(0)
@@ -333,6 +333,8 @@ def _do_poll():
             pass
 
         GPIO.setup(SW_XFER_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+    return True
 
 
 def _start_poll():
