@@ -16,7 +16,7 @@ try:
 except ImportError:
     raise ImportError("This library requires the RPi.GPIO module\nInstall with: sudo pip install RPi.GPIO")
 
-__version__ = '0.0.8'
+__version__ = '0.0.9'
 
 SW_ADDR = 0x42
 SW_RESET_PIN = 17
@@ -139,16 +139,16 @@ class AsyncWorker(StoppableThread):
 def _handle_sensor_data(data):
     global _lastrotation, rotation
 
-    d_configmask = data.pop(0) | data.pop(0) << 8
-    # d_timestamp = data.pop(0)  # 200hz, 8-bit counter, max ~1.25sec
-    d_sysinfo = data.pop(0)
+    d_configmask = data[0] | data[1] << 8
+    # d_timestamp = data[2] (200hz, 8-bit counter, max ~1.25sec)
+    d_sysinfo = data[3]
 
-    # d_dspstatus = data[0:2]
-    d_gesture = data[2:6]
-    d_touch = data[6:10]
-    d_airwheel = data[10:12]
-    d_xyz = data[12:20]
-    # d_noisepow = data[20:24]
+    # d_dspstatus = data[4:6]
+    d_gesture = data[6:10]
+    d_touch = data[10:14]
+    d_airwheel = data[14:16]
+    d_xyz = data[16:24]
+    # d_noisepow = data[24:28]
 
     if d_configmask & SW_DATA_XYZ and d_sysinfo & 0b0000001:
         # We have xyz info, and it's valid
@@ -274,12 +274,12 @@ def _handle_status_info(data):
 def _handle_firmware_info(data):
     print('Got firmware info')
 
-    d_fw_valid = data.pop(0)
-    # d_hw_rev = data.pop(0) | data.pop(0) << 8
-    # d_param_st = data.pop(0)
-    # d_loader_version = [ data.pop(0), data.pop(0), data.pop(0) ],
-    # d_fw_st = data.pop(0)
-    d_fw_version = ''.join(map(chr, data))
+    d_fw_valid = data[0]
+    # d_hw_rev = data[1] | data[2] << 8
+    # d_param_st = data[3]
+    # d_loader_version = data[4:7]
+    # d_fw_st = data[7]
+    d_fw_version = ''.join(map(chr, data[8:]))
 
     print(d_fw_version)
 
@@ -296,7 +296,7 @@ def _do_poll():
     time.sleep(0.001)
 
     if not _enable_events:
-        return
+        return True
 
     if not GPIO.input(SW_XFER_PIN):
         '''
@@ -313,12 +313,12 @@ def _do_poll():
             io_error_count += 1
             if io_error_count > 10:
                 raise Exception("Skywriter encoutered nore than 10 consecutive I2C IO errors!")
-            return
+            return False
 
-        # d_size = data.pop(0)
-        # d_flags = data.pop(0)
-        # d_seq = data.pop(0)
-        d_ident = data.pop(0)
+        # d_size = data[0]
+        # d_flags = data[1]
+        # d_seq = data[2]
+        d_ident = data[3]
 
         if d_ident == 0x91:
             _handle_sensor_data(data)
@@ -333,6 +333,8 @@ def _do_poll():
             pass
 
         GPIO.setup(SW_XFER_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+    return True
 
 
 def _start_poll():

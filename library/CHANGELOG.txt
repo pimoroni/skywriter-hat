@@ -1,3 +1,8 @@
+0.0.9
+-----
+
+* Fix polling thread and sensor data interpretation
+
 0.0.8
 -----
 
@@ -37,10 +42,7 @@
 
 * Many changes and fixes
 
- 
-
 0.0.1
 -----
 
 * Initial release
-

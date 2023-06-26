@@ -2,4 +2,3 @@ include CHANGELOG.txt
 include LICENSE.txt
 include README.md
 include setup.py
-include skywriter.py
