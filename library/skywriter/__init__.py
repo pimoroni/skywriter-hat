@@ -290,7 +290,7 @@ def _handle_firmware_info(data):
         raise Exception("An invalid GestiIC Library was stored, or the last update failed")
 
 
-def _do_poll() -> bool:
+def _do_poll():
     global io_error_count
 
     time.sleep(0.001)
